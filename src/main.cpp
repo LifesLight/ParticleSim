@@ -14,6 +14,10 @@ bool mouse_pressed = false;
 double last_mouse_x = 0.0;
 double last_mouse_y = 0.0;
 
+#define DIM_X 15
+#define DIM_Y 15
+#define DIM_Z 15
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -34,7 +38,7 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos) {
     if (mouse_pressed) {
         float sensitivity = 0.05f;
         float xoffset = (float)(xpos - last_mouse_x) * sensitivity;
-        float yoffset = (float)(last_mouse_y - ypos) * sensitivity;
+        float yoffset = (float)(ypos - last_mouse_y) * sensitivity;
 
         camera_yaw += xoffset;
         camera_pitch += yoffset;
@@ -56,46 +60,85 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
         camera_radius = 0.1f;
 }
 
-void drawCube() {
-    // Draw a simple colored cube
+
+void drawCube(float size) {
+    // Draw a simple colored cube with normals for lighting
+    float halfSize = size / 2.0f;
     glBegin(GL_QUADS);
     // Front face
-    glColor3f(1.0f, 0.0f, 0.0f); // Red
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
+    glNormal3f(0.0f, 0.0f, 1.0f);
+    glVertex3f(-halfSize, -halfSize, halfSize);
+    glVertex3f(halfSize, -halfSize, halfSize);
+    glVertex3f(halfSize, halfSize, halfSize);
+    glVertex3f(-halfSize, halfSize, halfSize);
     // Back face
-    glColor3f(0.0f, 1.0f, 0.0f); // Green
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(0.5f, 0.5f, -0.5f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
+    glNormal3f(0.0f, 0.0f, -1.0f);
+    glVertex3f(-halfSize, -halfSize, -halfSize);
+    glVertex3f(-halfSize, halfSize, -halfSize);
+    glVertex3f(halfSize, halfSize, -halfSize);
+    glVertex3f(halfSize, -halfSize, -halfSize);
     // Top face
-    glColor3f(0.0f, 0.0f, 1.0f); // Blue
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f(0.5f, 0.5f, 0.5f);
-    glVertex3f(0.5f, 0.5f, -0.5f);
+    glNormal3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(-halfSize, halfSize, -halfSize);
+    glVertex3f(-halfSize, halfSize, halfSize);
+    glVertex3f(halfSize, halfSize, halfSize);
+    glVertex3f(halfSize, halfSize, -halfSize);
     // Bottom face
-    glColor3f(1.0f, 1.0f, 0.0f); // Yellow
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
+    glNormal3f(0.0f, -1.0f, 0.0f);
+    glVertex3f(-halfSize, -halfSize, -halfSize);
+    glVertex3f(halfSize, -halfSize, -halfSize);
+    glVertex3f(halfSize, -halfSize, halfSize);
+    glVertex3f(-halfSize, -halfSize, halfSize);
     // Right face
-    glColor3f(1.0f, 0.0f, 1.0f); // Magenta
-    glVertex3f(0.5f, -0.5f, -0.5f);
-    glVertex3f(0.5f, 0.5f, -0.5f);
-    glVertex3f(0.5f, 0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
+    glNormal3f(1.0f, 0.0f, 0.0f);
+    glVertex3f(halfSize, -halfSize, -halfSize);
+    glVertex3f(halfSize, halfSize, -halfSize);
+    glVertex3f(halfSize, halfSize, halfSize);
+    glVertex3f(halfSize, -halfSize, halfSize);
     // Left face
-    glColor3f(0.0f, 1.0f, 1.0f); // Cyan
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
+    glNormal3f(-1.0f, 0.0f, 0.0f);
+    glVertex3f(-halfSize, -halfSize, -halfSize);
+    glVertex3f(-halfSize, -halfSize, halfSize);
+    glVertex3f(-halfSize, halfSize, halfSize);
+    glVertex3f(-halfSize, halfSize, -halfSize);
     glEnd();
+}
+
+
+void drawCubes(bool cubes[DIM_X][DIM_Y][DIM_Z], float bufferFraction) {
+    // Calculate the size of each cube and the gap between them
+    float cubeSize = 1.0f / (DIM_X * (1.0f + bufferFraction) - bufferFraction);
+    float gap = cubeSize * (1 - bufferFraction);
+
+    // Calculate the total size of the cube tensor
+    float tensorSize = (DIM_X * cubeSize) + ((DIM_X - 1) * gap);
+
+    // Calculate the starting position to center the cube tensor
+    float startX = -tensorSize / 2.0f;
+    float startY = -tensorSize / 2.0f;
+    float startZ = -tensorSize / 2.0f;
+
+    for (int x = 0; x < DIM_X; ++x) {
+        for (int y = 0; y < DIM_Y; ++y) {
+            for (int z = 0; z < DIM_Z; ++z) {
+                if (cubes[x][y][z]) {
+                    // Calculate the position of the cube
+                    float cubeX = startX + (x * (cubeSize + gap));
+                    float cubeY = startY + (y * (cubeSize + gap));
+                    float cubeZ = startZ + (z * (cubeSize + gap));
+
+                    glPushMatrix();
+                    glTranslatef(cubeX, cubeY, cubeZ);
+
+                    glBegin(GL_QUADS);
+
+                    drawCube(cubeSize); 
+
+                    glPopMatrix();
+                }
+            }
+        }
+    }
 }
 
 int main() {
@@ -106,7 +149,7 @@ int main() {
         return -1;
 
     // Create a windowed mode window and its OpenGL context
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Colored Cube", NULL, NULL);
+    window = glfwCreateWindow(WIDTH, HEIGHT, "ParticleSim", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
@@ -130,8 +173,37 @@ int main() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    // Enable lighting and set light properties
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    GLfloat light_position[] = { 1.0f, 1.0f, 1.0f, 0.0f };
+    GLfloat light_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    GLfloat light_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+
+    GLfloat mat_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
+    GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    GLfloat mat_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    GLfloat mat_shininess[] = { 50.0f };
+
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
+    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+
     // Set clear color
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+    bool cubes[DIM_X][DIM_Y][DIM_Z] = {0};
+
+    double lastTime = glfwGetTime();
+    double interval = 1.0;
 
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
@@ -149,7 +221,22 @@ int main() {
         glLoadIdentity();
         gluLookAt(camX, camY, camZ, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 
-        drawCube();
+        // Set background color
+        glClearColor(0.1f, 0.1f, 0.4f, 1.0f);
+
+        // Draw the cubes
+        if (glfwGetTime() - lastTime > interval) {
+            memset(cubes, 0, sizeof(cubes));
+            lastTime = glfwGetTime();
+            for (int i = 0; i < 40; ++i) {
+                int x = rand() % DIM_X;
+                int y = rand() % DIM_Y;
+                int z = rand() % DIM_Z;
+                cubes[x][y][z] = !cubes[x][y][z];
+            }
+        }
+
+        drawCubes(cubes, 1.0f);
 
         // Swap front and back buffers
         glfwSwapBuffers(window);

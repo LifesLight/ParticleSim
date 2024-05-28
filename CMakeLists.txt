@@ -3,7 +3,9 @@ project(ParticleSim)
 
 # Set C++ standard to C++23
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_C_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+set(CMAKE_C_STANDARD_REQUIRED OFF)
 
 # Define the compile variant option
 option(TERMINAL "Compile terminal variant" OFF)
@@ -13,6 +15,7 @@ set(SOURCES_COMMON
     src/main.cpp
     src/simulation/containers/domain.c
     src/simulation/start.c
+    src/visualiser/common.cpp
 )
 
 if (TERMINAL)
@@ -62,7 +65,7 @@ else()
     target_link_libraries(ParticleSim PRIVATE ${GLEW_LIBRARIES} ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLM_LIBRARIES})
 endif()
 # Extra flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 # Debug messages
 message(STATUS "Compile variant: ${VARIANT}")

@@ -4,7 +4,7 @@
  * Copyright (c) Alexander Kurtz 2024
  */
 
-#include "simulation/containers/cell.h"
+#include "simulation/containers/particle.h"
 
 #include <stdlib.h>
 

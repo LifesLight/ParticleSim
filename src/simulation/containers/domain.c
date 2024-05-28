@@ -19,6 +19,8 @@ void initDomain(Domain* domain, int x, int y, int z, int numParticles) {
     defaultParticle.vel[1] = 0.0f;
     defaultParticle.vel[2] = 0.0f;
 
+    defaultParticle.radius = 50.0f;
+
     // Allocate memory for the particles
     domain->particles = (Particle*)malloc(numParticles * sizeof(Particle));
 }

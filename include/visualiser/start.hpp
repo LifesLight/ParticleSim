@@ -18,11 +18,11 @@
 #include <unistd.h>
 #include <cstring>
 #include <csignal>
-#include <thread>
+#include <vector>
+#include <fstream>
+#include <string>
 
-#include "simulation/start.h"
+#include "visualiser/common.hpp"
 #include "simulation/containers/domain.h"
-
-using std::thread;
 
 void startVisualiser();

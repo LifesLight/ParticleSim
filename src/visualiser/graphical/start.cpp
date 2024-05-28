@@ -6,7 +6,7 @@
 
 const int WIDTH = 1000;
 const int HEIGHT = 1000;
-const double FPS = 30.0;
+const double FPS = 60.0;
 const double frameDuration = 1.0 / FPS;
 
 float camera_yaw = 0.0f;
@@ -58,65 +58,64 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
         camera_radius = 0.1f;
 }
 
-void drawCube(float size) {
-    float halfSize = size / 2.0f;
-    glBegin(GL_QUADS);
-    glNormal3f(0.0f, 0.0f, 1.0f);
-    glVertex3f(-halfSize, -halfSize, halfSize);
-    glVertex3f(halfSize, -halfSize, halfSize);
-    glVertex3f(halfSize, halfSize, halfSize);
-    glVertex3f(-halfSize, halfSize, halfSize);
 
-    glNormal3f(0.0f, 0.0f, -1.0f);
-    glVertex3f(-halfSize, -halfSize, -halfSize);
-    glVertex3f(-halfSize, halfSize, -halfSize);
-    glVertex3f(halfSize, halfSize, -halfSize);
-    glVertex3f(halfSize, -halfSize, -halfSize);
-
-    glNormal3f(0.0f, 1.0f, 0.0f);
-    glVertex3f(-halfSize, halfSize, -halfSize);
-    glVertex3f(-halfSize, halfSize, halfSize);
-    glVertex3f(halfSize, halfSize, halfSize);
-    glVertex3f(halfSize, halfSize, -halfSize);
-
-    glNormal3f(0.0f, -1.0f, 0.0f);
-    glVertex3f(-halfSize, -halfSize, -halfSize);
-    glVertex3f(halfSize, -halfSize, -halfSize);
-    glVertex3f(halfSize, -halfSize, halfSize);
-    glVertex3f(-halfSize, -halfSize, halfSize);
-
-    glNormal3f(1.0f, 0.0f, 0.0f);
-    glVertex3f(halfSize, -halfSize, -halfSize);
-    glVertex3f(halfSize, halfSize, -halfSize);
-    glVertex3f(halfSize, halfSize, halfSize);
-    glVertex3f(halfSize, -halfSize, halfSize);
-
-    glNormal3f(-1.0f, 0.0f, 0.0f);
-    glVertex3f(-halfSize, -halfSize, -halfSize);
-    glVertex3f(-halfSize, -halfSize, halfSize);
-    glVertex3f(-halfSize, halfSize, halfSize);
-    glVertex3f(-halfSize, halfSize, -halfSize);
-    glEnd();
+std::string readFile(const char* filePath) {
+    std::ifstream file(filePath);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
 }
 
-void drawCubes(Domain* domain, float bufferFraction) {
-    float cubeSize = 1.0f / (domain->DIM_X * (1.0f + bufferFraction) - bufferFraction);
-    float gap = cubeSize * (1 - bufferFraction);
-    float tensorSize = (domain->DIM_X * cubeSize) + ((domain->DIM_X - 1) * gap);
-    float startX = -tensorSize / 2.0f;
-    float startY = -tensorSize / 2.0f;
-    float startZ = -tensorSize / 2.0f;
+GLuint compileShader(GLenum type, const char* source) {
+    GLuint shader = glCreateShader(type);
+    glShaderSource(shader, 1, &source, nullptr);
+    glCompileShader(shader);
 
-    for (int i = 0; i < domain->numParticles; ++i) {
-        Particle *particle = &domain->particles[i];
-        float particleX = startX + (particle->pos[0] * (cubeSize + gap));
-        float particleY = startZ + (particle->pos[2] * (cubeSize + gap));
-        float particleZ = startY + (particle->pos[1] * (cubeSize + gap));
+    GLint success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+        std::cerr << "Error compiling shader: " << infoLog << std::endl;
+    }
 
-        glPushMatrix();
-        glTranslatef(particleX, particleY, particleZ);
-        drawCube(cubeSize);
-        glPopMatrix();
+    return shader;
+}
+
+GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
+    std::string vertexCode = readFile(vertexPath);
+    std::string fragmentCode = readFile(fragmentPath);
+
+    GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexCode.c_str());
+    GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentCode.c_str());
+
+    GLuint shaderProgram = glCreateProgram();
+    glAttachShader(shaderProgram, vertexShader);
+    glAttachShader(shaderProgram, fragmentShader);
+
+    // Bind attribute location
+    glBindAttribLocation(shaderProgram, 0, "aPos");
+
+    glLinkProgram(shaderProgram);
+
+    GLint success;
+    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetProgramInfoLog(shaderProgram, 512, nullptr, infoLog);
+        std::cerr << "Error linking shader program: " << infoLog << std::endl;
+    }
+
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
+
+    return shaderProgram;
+}
+
+void updatePoints(const Particle* particles, size_t numParticles, std::vector<glm::vec3>& points, int DIM_X, int DIM_Y, int DIM_Z) {
+    points.clear();
+    for (size_t i = 0; i < numParticles; i++) {
+        points.push_back(glm::vec3(particles[i].pos[0] - DIM_X / 2, particles[i].pos[1] - DIM_Y / 2, particles[i].pos[2] - DIM_Z / 2));
     }
 }
 
@@ -126,7 +125,7 @@ void startVisualiser() {
     if (!glfwInit())
         exit(EXIT_FAILURE);
 
-    window = glfwCreateWindow(WIDTH, HEIGHT, "ParticleSim", NULL, NULL);
+    window = glfwCreateWindow(WIDTH, HEIGHT, "OpenGL", NULL, NULL);
     if (!window) {
         glfwTerminate();
         exit(EXIT_FAILURE);
@@ -140,44 +139,45 @@ void startVisualiser() {
 
     GLenum err = glewInit();
     if (GLEW_OK != err) {
-        std::cerr << "Error: " << glewGetErrorString(err) << std::endl;
+        std::cout << "Error: " << glewGetErrorString(err) << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
 
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
+    GLuint shaderProgram = createShaderProgram("../shaders/vertex_shader.glsl", "../shaders/fragment_shader.glsl");
 
-    GLfloat light_position[] = { 1.0f, 1.0f, 1.0f, 0.0f };
-    GLfloat light_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-    GLfloat light_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-    GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    std::cout << "Compiled shader program." << std::endl;
 
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
 
-    GLfloat mat_ambient[] = { 0.2f, 0.2f, 0.2f, 1.0f };
-    GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-    GLfloat mat_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    GLfloat mat_shininess[] = { 50.0f };
+    const int numParticles = 1000;
+    const int DIM_X = 50;
+    const int DIM_Y = 50;
+    const int DIM_Z = 50;
 
-    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+    Domain* renderDomain = getSimulationHandle(DIM_X, DIM_Y, DIM_Z, numParticles);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    while (!renderDomain->drawable) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 
-    Domain* renderDomain = new Domain();
-    renderDomain->drawable = false;
-    std::thread simulationThread(startSimulation, renderDomain);
-    simulationThread.detach();
+    const Particle *particles = renderDomain->particles;
+    std::vector<glm::vec3> points;
+
+    updatePoints(particles, numParticles, points, DIM_X, DIM_Y, DIM_Z);
+
+    GLuint VBO;
+    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), points.data(), GL_STATIC_DRAW);
+
+    glEnable(GL_POINT_SMOOTH);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     double lastTime = glfwGetTime();
+
+    std::cout << "Starting Render Loop..." << std::endl;
 
     while (!glfwWindowShouldClose(window)) {
         double currentTime = glfwGetTime();
@@ -186,25 +186,38 @@ void startVisualiser() {
         if (deltaTime >= frameDuration) {
             lastTime = currentTime;
 
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            // Set background color
+            glClearColor(0.2f, 0.2f, 0.5f, 1.0f);
+
+            if (renderDomain->drawable) {
+                updatePoints(particles, numParticles, points, DIM_X, DIM_Y, DIM_Z);
+            }
 
             float camX = std::cos(glm::radians(camera_yaw)) * std::cos(glm::radians(camera_pitch)) * camera_radius;
             float camY = std::sin(glm::radians(camera_pitch)) * camera_radius;
             float camZ = std::sin(glm::radians(camera_yaw)) * std::cos(glm::radians(camera_pitch)) * camera_radius;
 
-            glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+            glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 1000.0f);
             glm::mat4 view = glm::lookAt(glm::vec3(camX, camY, camZ), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-            glMatrixMode(GL_PROJECTION);
-            glLoadMatrixf(glm::value_ptr(projection));
-            glMatrixMode(GL_MODELVIEW);
-            glLoadMatrixf(glm::value_ptr(view));
+            glUseProgram(shaderProgram);
 
-            glClearColor(0.1f, 0.1f, 0.4f, 1.0f);
+            glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+            glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
-            if (renderDomain->drawable) {
-                drawCubes(renderDomain, 1.0f);
-            }
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec3), points.data());
+
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+            glPointSize(5.0f);
+            glDrawArrays(GL_POINTS, 0, points.size());
+
+            glDisableVertexAttribArray(0);
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
 
             glfwSwapBuffers(window);
         }
@@ -213,5 +226,7 @@ void startVisualiser() {
         glfwPollEvents();
     }
 
+    glDeleteBuffers(1, &VBO);
+    glDeleteProgram(shaderProgram);
     glfwTerminate();
 }

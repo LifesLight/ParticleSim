@@ -7,5 +7,6 @@
 #include <stdbool.h>
 
 typedef struct {
-    bool isSet;
-} Cell;
+    float pos[3];
+    float vel[3];
+} Particle;

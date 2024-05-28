@@ -1,8 +1,8 @@
+#include "visualiser/start.hpp"
+
 /**
  * Copyright (c) Alexander Kurtz 2024
  */
-
-#include "visualiser/start.hpp"
 
 const int WIDTH = 1000;
 const int HEIGHT = 1000;
@@ -107,21 +107,16 @@ void drawCubes(Domain* domain, float bufferFraction) {
     float startY = -tensorSize / 2.0f;
     float startZ = -tensorSize / 2.0f;
 
-    for (int x = 0; x < domain->DIM_X; ++x) {
-        for (int y = 0; y < domain->DIM_Y; ++y) {
-            for (int z = 0; z < domain->DIM_Z; ++z) {
-                if (domain->cells[x][y][z].isSet == true) {
-                    float cubeX = startX + (x * (cubeSize + gap));
-                    float cubeY = startY + (y * (cubeSize + gap));
-                    float cubeZ = startZ + (z * (cubeSize + gap));
+    for (int i = 0; i < domain->numParticles; ++i) {
+        Particle *particle = &domain->particles[i];
+        float particleX = startX + (particle->pos[0] * (cubeSize + gap));
+        float particleY = startZ + (particle->pos[2] * (cubeSize + gap));
+        float particleZ = startY + (particle->pos[1] * (cubeSize + gap));
 
-                    glPushMatrix();
-                    glTranslatef(cubeX, cubeY, cubeZ);
-                    drawCube(cubeSize);
-                    glPopMatrix();
-                }
-            }
-        }
+        glPushMatrix();
+        glTranslatef(particleX, particleY, particleZ);
+        drawCube(cubeSize);
+        glPopMatrix();
     }
 }
 

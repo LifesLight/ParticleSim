@@ -14,8 +14,8 @@ typedef struct {
     int DIM_Z;
 
     bool drawable;
-
-    Cell*** cells;
+    Particle *particles;
+    size_t numParticles;
 } Domain;
 
-void initDomain(Domain* domain, int size_x, int size_y, int size_z);
+void initDomain(Domain* domain, int size_x, int size_y, int size_z, int numParticles);

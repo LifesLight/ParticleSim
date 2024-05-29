@@ -112,10 +112,12 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
-void updatePoints(const Particle* particles, size_t numParticles, std::vector<glm::vec3>& points, int DIM_X, int DIM_Y, int DIM_Z) {
-    points.clear();
+void updatePoints(const Particle* particles, size_t numParticles, std::vector<glm::vec3>& cords, std::vector<glm::vec3>& cols, int DIM_X, int DIM_Y, int DIM_Z) {
+    cords.clear();
+    cols.clear();
     for (size_t i = 0; i < numParticles; i++) {
-        points.push_back(glm::vec3(particles[i].pos[0] - DIM_X / 2, particles[i].pos[1] - DIM_Y / 2, particles[i].pos[2] - DIM_Z / 2));
+        cords.push_back(glm::vec3(particles[i].pos[2] - DIM_Z / 2, particles[i].pos[1] - DIM_Y / 2, particles[i].pos[0] - DIM_X / 2));
+        cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]));
     }
 }
 
@@ -149,7 +151,6 @@ void startVisualiser() {
 
     std::cout << "Compiled shader program." << std::endl;
 
-
     const int numParticles = 1000;
     const int DIM_X = 50;
     const int DIM_Y = 50;
@@ -162,14 +163,20 @@ void startVisualiser() {
     }
 
     const Particle *particles = renderDomain->particles;
-    std::vector<glm::vec3> points;
+    std::vector<glm::vec3> cords;
+    std::vector<glm::vec3> colors;
 
-    updatePoints(particles, numParticles, points, DIM_X, DIM_Y, DIM_Z);
+    updatePoints(particles, numParticles, cords, colors, DIM_X, DIM_Y, DIM_Z);
 
-    GLuint VBO;
+    GLuint VBO, CBO;
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &CBO);
+
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), points.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, cords.size() * sizeof(glm::vec3), cords.data(), GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, CBO);
+    glBufferData(GL_ARRAY_BUFFER, colors.size() * sizeof(glm::vec3), colors.data(), GL_STATIC_DRAW);
 
     glEnable(GL_POINT_SMOOTH);
     glEnable(GL_BLEND);
@@ -192,7 +199,13 @@ void startVisualiser() {
             glClearColor(0.2f, 0.2f, 0.5f, 1.0f);
 
             if (renderDomain->drawable) {
-                updatePoints(particles, numParticles, points, DIM_X, DIM_Y, DIM_Z);
+                updatePoints(particles, numParticles, cords, colors, DIM_X, DIM_Y, DIM_Z);
+
+                glBindBuffer(GL_ARRAY_BUFFER, VBO);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, cords.size() * sizeof(glm::vec3), cords.data());
+
+                glBindBuffer(GL_ARRAY_BUFFER, CBO);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, colors.size() * sizeof(glm::vec3), colors.data());
             }
 
             float camX = std::cos(glm::radians(camera_yaw)) * std::cos(glm::radians(camera_pitch)) * camera_radius;
@@ -208,15 +221,18 @@ void startVisualiser() {
             glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
             glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glBufferSubData(GL_ARRAY_BUFFER, 0, points.size() * sizeof(glm::vec3), points.data());
-
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-            glPointSize(5.0f);
-            glDrawArrays(GL_POINTS, 0, points.size());
+            glBindBuffer(GL_ARRAY_BUFFER, CBO);
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+            glPointSize(10.0f);
+            glDrawArrays(GL_POINTS, 0, cords.size());
 
             glDisableVertexAttribArray(0);
+            glDisableVertexAttribArray(1);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
             glfwSwapBuffers(window);

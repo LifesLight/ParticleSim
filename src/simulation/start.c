@@ -4,7 +4,7 @@
  * Copyright (c) Alexander Kurtz 2024
  */
 
-#define SUBSAMPLING 1
+#define SUBSAMPLING 4
 #define TARGET_FPS 60
 
 void updateDraw(Domain *source, Domain *target) {
@@ -14,6 +14,43 @@ void updateDraw(Domain *source, Domain *target) {
     source->drawable = false;
 }
 
+void handleCollision(Particle* a, Particle* b) {
+    float dx = a->pos[0] - b->pos[0];
+    float dy = a->pos[1] - b->pos[1];
+    float dz = a->pos[2] - b->pos[2];
+
+    float distance = sqrtf(dx * dx + dy * dy + dz * dz);
+
+    if (distance < a->radius + b->radius) {
+        // Normal vector
+        float nx = dx / distance;
+        float ny = dy / distance;
+        float nz = dz / distance;
+
+        // Relative velocity
+        float vx = a->vel[0] - b->vel[0];
+        float vy = a->vel[1] - b->vel[1];
+        float vz = a->vel[2] - b->vel[2];
+
+        // Dot product of relative velocity and normal vector
+        float vDotN = vx * nx + vy * ny + vz * nz;
+
+        // Only resolve if particles are moving towards each other
+        if (vDotN > 0) return;
+
+        // Collision response
+        float impulse = vDotN;
+
+        a->vel[0] -= impulse * nx;
+        a->vel[1] -= impulse * ny;
+        a->vel[2] -= impulse * nz;
+
+        b->vel[0] += impulse * nx;
+        b->vel[1] += impulse * ny;
+        b->vel[2] += impulse * nz;
+    }
+}
+
 void stepGlobal(Domain *domain) {
     const int DIM_X = domain->DIM_X;
     const int DIM_Y = domain->DIM_Y;
@@ -21,57 +58,42 @@ void stepGlobal(Domain *domain) {
 
     const size_t particles = domain->numParticles;
 
+    // Check for collisions
+    for (int i = 0; i < particles; ++i) {
+        for (int j = i + 1; j < particles; ++j) {
+            handleCollision(&domain->particles[i], &domain->particles[j]);
+        }
+    }
+
+    // Update particle positions and handle boundary collisions
     for (int i = 0; i < particles; ++i) {
         Particle *particle = &domain->particles[i];
-
-        // Update the particle
-
-        // Check for collisions
-
-        for (int j = 0; j < particles; ++j) {
-            if (i == j) {
-                continue;
-            }
-
-            Particle *other = &domain->particles[j];
-
-            float dx = particle->pos[0] - other->pos[0];
-            float dy = particle->pos[1] - other->pos[1];
-            float dz = particle->pos[2] - other->pos[2];
-
-            float distance = sqrt(dx * dx + dy * dy + dz * dz);
-
-            if (distance < particle->radius + other->radius) {
-                // Collision
-                particle->vel[0] *= -1;
-                particle->vel[1] *= -1;
-                particle->vel[2] *= -1;
-
-                other->vel[0] *= -1;
-                other->vel[1] *= -1;
-                other->vel[2] *= -1;
-            }
-        }
-        
-
-        // Check if we would go out of bounds
-        if (particle->pos[0] + particle->vel[0] < 0 || particle->pos[0] + particle->vel[0] >= DIM_X) {
-            particle->vel[0] *= -1;
-        }
-
-        if (particle->pos[1] + particle->vel[1] < 0 || particle->pos[1] + particle->vel[1] >= DIM_Y) {
-            particle->vel[1] *= -1;
-        }
-
-        if (particle->pos[2] + particle->vel[2] < 0 || particle->pos[2] + particle->vel[2] >= DIM_Z) {
-            particle->vel[2] *= -1;
-        }
 
         particle->pos[0] += particle->vel[0];
         particle->pos[1] += particle->vel[1];
         particle->pos[2] += particle->vel[2];
+
+        // Check if we would go out of bounds
+        if (particle->pos[0] - particle->radius < 0 || particle->pos[0] + particle->radius >= DIM_X) {
+            particle->vel[0] *= -1;
+            if (particle->pos[0] - particle->radius < 0) particle->pos[0] = particle->radius;
+            if (particle->pos[0] + particle->radius >= DIM_X) particle->pos[0] = DIM_X - particle->radius;
+        }
+
+        if (particle->pos[1] - particle->radius < 0 || particle->pos[1] + particle->radius >= DIM_Y) {
+            particle->vel[1] *= -1;
+            if (particle->pos[1] - particle->radius < 0) particle->pos[1] = particle->radius;
+            if (particle->pos[1] + particle->radius >= DIM_Y) particle->pos[1] = DIM_Y - particle->radius;
+        }
+
+        if (particle->pos[2] - particle->radius < 0 || particle->pos[2] + particle->radius >= DIM_Z) {
+            particle->vel[2] *= -1;
+            if (particle->pos[2] - particle->radius < 0) particle->pos[2] = particle->radius;
+            if (particle->pos[2] + particle->radius >= DIM_Z) particle->pos[2] = DIM_Z - particle->radius;
+        }
     }
 }
+
 
 void startSimulation(Domain* visualizerDomain, int numParticles, int size_x, int size_y, int size_z) {
     Domain domain;
@@ -81,7 +103,7 @@ void startSimulation(Domain* visualizerDomain, int numParticles, int size_x, int
     // spawn particles
     srand(time(NULL));
 
-    float slowdown = 2.5f;
+    float slowdown = 50.0f;
     float maxInitialVelocity = 100.0f * SUBSAMPLING * slowdown;
 
     for (int i = 0; i < domain.numParticles; ++i) {
@@ -91,15 +113,32 @@ void startSimulation(Domain* visualizerDomain, int numParticles, int size_x, int
         particle->pos[1] = rand() % domain.DIM_Y;
         particle->pos[2] = rand() % domain.DIM_Z;
 
+        // particle->pos[0] = 25.0f;
+        // particle->pos[1] = 25.0f;
+        // particle->pos[2] = 25.0f;
+
         particle->vel[0] = (rand() % 100) / maxInitialVelocity;
         particle->vel[1] = (rand() % 100) / maxInitialVelocity;
         particle->vel[2] = (rand() % 100) / maxInitialVelocity;
+
+        // particle->vel[0] = 0.0f;
+        // particle->vel[1] = 0.0f;
+        // particle->vel[2] = 0.0f;
+
+        particle->col[0] = (rand() % 255) / 255.0f;
+        particle->col[1] = (rand() % 255) / 255.0f;
+        particle->col[2] = (rand() % 255) / 255.0f;
+
+        particle->radius = 0.1f;
     }
 
     const double frameDuration = 1.0 / TARGET_FPS;
 
     struct timespec start, end;
     double elapsedTime;
+    double totalTime = 0.0;
+    int frameCount = 0;
+
     while (1) {
         clock_gettime(CLOCK_MONOTONIC, &start);
 
@@ -113,6 +152,20 @@ void startSimulation(Domain* visualizerDomain, int numParticles, int size_x, int
 
         clock_gettime(CLOCK_MONOTONIC, &end);
         elapsedTime = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+
+        totalTime += elapsedTime;
+        frameCount++;
+
+        if (frameCount % TARGET_FPS == 0) {
+            double averageTime = totalTime / frameCount;
+            printf("Average time per frame: %.6f seconds", averageTime);
+
+            if (averageTime > frameDuration) {
+                printf(" Warning: Running slow");
+            }
+
+            printf("\n");
+        }
 
         double sleepTime = frameDuration - elapsedTime;
         if (sleepTime > 0) {

@@ -9,5 +9,6 @@
 typedef struct {
     float pos[3];
     float vel[3];
+    float col[3];
     float radius;
 } Particle;

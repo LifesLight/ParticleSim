@@ -4,8 +4,6 @@
  * Copyright (c) Alexander Kurtz 2024
  */
 
-#define TARGET_FPS 60
-
 void updateDraw(Domain *source, Domain *target) {
     // Update the visualizer domain
     source->drawable = true;
@@ -50,49 +48,49 @@ void startSimulation(Domain* visualizerDomain, Config config) {
     // spawn particles
     srand(time(NULL));
 
-    float maxInitialVelocity = (1000.0f * config.supsampling) / config.speed;
+    float maxInitialVelocity = 0.01f / domain.config.__internalSpeedDividor;
 
-// Calculate the volume of the domain
-float volume = (domain.config.dim[0] - 0.2) * (domain.config.dim[1] - 0.2) * (domain.config.dim[2] - 0.2);
+    // Calculate the volume of the domain
+    float volume = (domain.config.dim[0] - 0.2) * (domain.config.dim[1] - 0.2) * (domain.config.dim[2] - 0.2);
 
-// Calculate the approximate spacing between particles to achieve even distribution
-float spacing = pow(volume / domain.config.numParticles, 1.0 / 3.0);
+    // Calculate the approximate spacing between particles to achieve even distribution
+    float spacing = pow(volume / domain.config.numParticles, 1.0 / 3.0);
 
-// Calculate the number of particles along each dimension
-int numParticlesX = ceil((domain.config.dim[0] - 0.2) / spacing);
-int numParticlesY = ceil((domain.config.dim[1] - 0.2) / spacing);
-int numParticlesZ = ceil((domain.config.dim[2] - 0.2) / spacing);
+    // Calculate the number of particles along each dimension
+    int numParticlesX = ceil((domain.config.dim[0] - 0.2) / spacing);
+    int numParticlesY = ceil((domain.config.dim[1] - 0.2) / spacing);
+    int numParticlesZ = ceil((domain.config.dim[2] - 0.2) / spacing);
 
-// Recalculate the actual spacing based on the number of particles
-spacing = min((domain.config.dim[0] - 0.2) / numParticlesX, min((domain.config.dim[1] - 0.2) / numParticlesY, (domain.config.dim[2] - 0.2) / numParticlesZ));
+    // Recalculate the actual spacing based on the number of particles
+    spacing = min((domain.config.dim[0] - 0.2) / numParticlesX, min((domain.config.dim[1] - 0.2) / numParticlesY, (domain.config.dim[2] - 0.2) / numParticlesZ));
 
-for (int i = 0; i < domain.config.numParticles; ++i) {
-    Particle *particle = &domain.particles[i];
+    for (int i = 0; i < domain.config.numParticles; ++i) {
+        Particle *particle = &domain.particles[i];
 
-    // Calculate the grid indices for each particle
-    int xIndex = i % numParticlesX;
-    int yIndex = (i / numParticlesX) % numParticlesY;
-    int zIndex = i / (numParticlesX * numParticlesY);
+        // Calculate the grid indices for each particle
+        int xIndex = i % numParticlesX;
+        int yIndex = (i / numParticlesX) % numParticlesY;
+        int zIndex = i / (numParticlesX * numParticlesY);
 
-    // Assign positions based on the grid indices, with padding added
-    particle->pos[0] = xIndex * spacing + 0.1;
-    particle->pos[1] = yIndex * spacing + 0.1;
-    particle->pos[2] = zIndex * spacing + 0.1;
+        // Assign positions based on the grid indices, with padding added
+        particle->pos[0] = xIndex * spacing + 0.1;
+        particle->pos[1] = yIndex * spacing + 0.1;
+        particle->pos[2] = zIndex * spacing + 0.1;
 
-    // Velocity and color settings remain unchanged
-    particle->vel[0] = (rand() % 100) / maxInitialVelocity;
-    particle->vel[1] = (rand() % 100) / maxInitialVelocity;
-    particle->vel[2] = (rand() % 100) / maxInitialVelocity;
+        // Velocity and color settings remain unchanged
+        particle->vel[0] = (rand() % 100) * maxInitialVelocity;
+        particle->vel[1] = (rand() % 100) * maxInitialVelocity;
+        particle->vel[2] = (rand() % 100) * maxInitialVelocity;
 
-    particle->col[0] = rand() % 255;
-    particle->col[1] = rand() % 255;
-    particle->col[2] = rand() % 255;
+        particle->col[0] = rand() % 255;
+        particle->col[1] = rand() % 255;
+        particle->col[2] = rand() % 255;
 
-    particle->radius = config.radius;
-}
+        particle->radius = config.radius;
+    }
 
 
-    const double frameDuration = 1.0 / TARGET_FPS;
+    const double frameDuration = 1.0 / config.fps;
 
     struct timespec start, end;
     double elapsedTime;
@@ -122,7 +120,7 @@ for (int i = 0; i < domain.config.numParticles; ++i) {
             runningSlow = true;
         }
 
-        if (frameCount % TARGET_FPS == 0) {
+        if (frameCount % config.fps == 0) {
             double averageTime = totalTime / frameCount;
             printf("Average time per frame: %.6f seconds", averageTime);
 

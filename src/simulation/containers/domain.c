@@ -5,6 +5,7 @@
  */
 
 void initDomain(Domain* domain, Config config) {
+    config.__internalSpeedDividor = ((float) config.fps) * ((float) config.supsampling) / (float) config.speed;
     domain->config = config;
 
     // Allocate memory for the particles

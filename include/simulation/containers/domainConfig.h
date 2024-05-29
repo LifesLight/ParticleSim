@@ -11,13 +11,16 @@ typedef struct {
 
     float friction;
     float gravity;
-    float speed;
     float repulsion;
 
+    float speed;
     int supsampling;
+    int fps;
 
     size_t numParticles;
     float radius;
 
     int targetChunkCount;
+
+    float __internalSpeedDividor;
 } Config;

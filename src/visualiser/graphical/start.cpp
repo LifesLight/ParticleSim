@@ -117,9 +117,9 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
     cols.clear();
     for (size_t i = 0; i < numParticles; i++) {
         cords.push_back(glm::vec3(particles[i].pos[2] - DIM_Z / 2, particles[i].pos[1] - DIM_Y / 2, particles[i].pos[0] - DIM_X / 2));
-        // cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]) / 255.0f);
+        cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]) / 255.0f);
 
-
+/**
         float totalVel = sqrt(particles[i].vel[0] * particles[i].vel[0] + particles[i].vel[1] * particles[i].vel[1] + particles[i].vel[2] * particles[i].vel[2]);
         if (totalVel < 0.0f) {
             totalVel *= -1;
@@ -139,7 +139,7 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
         }
 
         cols.push_back(glm::vec3(red, particles[i].col[1] / 255.0f, blue));
-
+*/
     }
 }
 
@@ -236,19 +236,20 @@ void startVisualiser() {
     std::cout << "Compiled shader program." << std::endl;
 
     Config config;
-    config.dim[0] = 1;
-    config.dim[1] = 7;
-    config.dim[2] = 1;
+    config.dim[0] = 15;
+    config.dim[1] = 10;
+    config.dim[2] = 15;
 
-    config.friction = 0.95f;
-    config.repulsion = 0.05f;
+    config.friction = 0.98f;
+    config.repulsion = 0.1f;
 
     config.gravity = 0.01f;
-    config.speed = 0.05f;
-    config.supsampling = 10;
+    config.speed = 1.0f;
+    config.supsampling = 1;
+    config.fps = 60;
 
     config.numParticles = 10000;
-    config.radius = 0.05f;
+    config.radius = 0.2f;
     config.targetChunkCount = pow(4, 8);
 
     Domain* renderDomain = getSimulationHandle(config);
@@ -277,6 +278,9 @@ void startVisualiser() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+
     double lastTime = glfwGetTime();
 
     std::cout << "Starting Render Loop..." << std::endl;
@@ -288,7 +292,7 @@ void startVisualiser() {
         if (deltaTime >= frameDuration) {
             lastTime = currentTime;
 
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             // Set background color
             glClearColor(0.831372549, 0.7960784314f, 0.8980392157f, 1.0f);

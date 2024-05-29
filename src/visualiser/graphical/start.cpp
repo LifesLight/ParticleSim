@@ -11,7 +11,7 @@ const double frameDuration = 1.0 / FPS;
 
 float camera_yaw = 0.0f;
 float camera_pitch = 0.0f;
-float camera_radius = 3.0f;
+float camera_radius = 10.0f;
 float camera_speed = 0.1f;
 bool mouse_pressed = false;
 double last_mouse_x = 0.0;
@@ -117,9 +117,78 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
     cols.clear();
     for (size_t i = 0; i < numParticles; i++) {
         cords.push_back(glm::vec3(particles[i].pos[2] - DIM_Z / 2, particles[i].pos[1] - DIM_Y / 2, particles[i].pos[0] - DIM_X / 2));
-        cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]));
+        // cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]) / 255.0f);
+
+
+        float totalVel = sqrt(particles[i].vel[0] * particles[i].vel[0] + particles[i].vel[1] * particles[i].vel[1] + particles[i].vel[2] * particles[i].vel[2]);
+        if (totalVel < 0.0f) {
+            totalVel *= -1;
+        }
+
+        float blue, red;
+
+        totalVel *= 8;
+
+        // Go smmoothly from blue to red
+        if (totalVel < 0.5) {
+            blue = 1.0f;
+            red = 2.0f * totalVel;
+        } else {
+            blue = 2.0f - 2.0f * totalVel;
+            red = 1.0f;
+        }
+
+        cols.push_back(glm::vec3(red, particles[i].col[1] / 255.0f, blue));
     }
 }
+
+void drawChunkBorder(int DIM_X, int DIM_Y, int DIM_Z) {
+    // Draw the border of the chunk
+    glBegin(GL_LINES);
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    // Front face
+    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
+
+    glVertex3f(DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
+
+    glVertex3f(DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(-DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
+
+    glVertex3f(-DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
+
+    // Back face
+    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+    glVertex3f(DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+
+    glVertex3f(DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+    glVertex3f(DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+
+    glVertex3f(DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+    glVertex3f(-DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+
+    glVertex3f(-DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+
+    // Connect front and back faces
+    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+
+    glVertex3f(DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+
+    glVertex3f(DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+
+    glVertex3f(-DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(-DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+
+    glEnd();
+}
+
 
 void startVisualiser() {
     GLFWwindow* window;
@@ -151,12 +220,13 @@ void startVisualiser() {
 
     std::cout << "Compiled shader program." << std::endl;
 
-    const int numParticles = 1000;
-    const int DIM_X = 50;
-    const int DIM_Y = 50;
-    const int DIM_Z = 50;
+    const int numParticles = 7500;
+    const int DIM_X = 10;
+    const int DIM_Y = 8;
+    const int DIM_Z = 2;
+    const float radius = 0.08f;
 
-    Domain* renderDomain = getSimulationHandle(DIM_X, DIM_Y, DIM_Z, numParticles);
+    Domain* renderDomain = getSimulationHandle(DIM_X, DIM_Y, DIM_Z, numParticles, radius);
 
     while (!renderDomain->drawable) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -196,7 +266,7 @@ void startVisualiser() {
             glClear(GL_COLOR_BUFFER_BIT);
 
             // Set background color
-            glClearColor(0.2f, 0.2f, 0.5f, 1.0f);
+            glClearColor(0.831372549, 0.7960784314f, 0.8980392157f, 1.0f);
 
             if (renderDomain->drawable) {
                 updatePoints(particles, numParticles, cords, colors, DIM_X, DIM_Y, DIM_Z);
@@ -215,6 +285,8 @@ void startVisualiser() {
             glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 1000.0f);
             glm::mat4 view = glm::lookAt(glm::vec3(camX, camY, camZ), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
+            drawChunkBorder(DIM_X, DIM_Y, DIM_Z);
+
             glUseProgram(shaderProgram);
 
             glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
@@ -228,7 +300,7 @@ void startVisualiser() {
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-            glPointSize(10.0f);
+            glPointSize((radius * 1000) / sqrt(camera_radius));
             glDrawArrays(GL_POINTS, 0, cords.size());
 
             glDisableVertexAttribArray(0);

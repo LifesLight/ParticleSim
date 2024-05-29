@@ -4,14 +4,26 @@
  * Copyright (c) Alexander Kurtz 2024
  */
 
-#define SUBSAMPLING 4
-#define TARGET_FPS 60
+#define SUBSAMPLING 1
+#define TARGET_FPS 30
+#define SPEED 0.1f
+
+#define GRAVITY 0.01f
+#define FRICTION 0.98f
+
+// #define REMDIM
 
 void updateDraw(Domain *source, Domain *target) {
     // Update the visualizer domain
     source->drawable = true;
     memccpy(target, source, sizeof(Domain), sizeof(Domain));
     source->drawable = false;
+}
+
+
+void applyExternalForces(Particle *particle) {
+    // Apply gravity
+    particle->vel[1] -= (GRAVITY / SUBSAMPLING) * SPEED;
 }
 
 void handleCollision(Particle* a, Particle* b) {
@@ -39,7 +51,7 @@ void handleCollision(Particle* a, Particle* b) {
         if (vDotN > 0) return;
 
         // Collision response
-        float impulse = vDotN;
+        float impulse = vDotN * FRICTION;
 
         a->vel[0] -= impulse * nx;
         a->vel[1] -= impulse * ny;
@@ -58,10 +70,45 @@ void stepGlobal(Domain *domain) {
 
     const size_t particles = domain->numParticles;
 
+    for (int i = 0; i < particles; ++i) {
+        Particle *particle = &domain->particles[i];
+
+        applyExternalForces(particle);
+    }
+
     // Check for collisions
     for (int i = 0; i < particles; ++i) {
-        for (int j = i + 1; j < particles; ++j) {
-            handleCollision(&domain->particles[i], &domain->particles[j]);
+        Particle *particle = &domain->particles[i];
+
+        const int chunkX = particle->pos[0] / domain->chunkSize;
+        const int chunkY = particle->pos[1] / domain->chunkSize;
+        const int chunkZ = particle->pos[2] / domain->chunkSize;
+
+        Chunk *chunk = &domain->chunks[chunkX][chunkY][chunkZ];
+        const int chunkParticles = chunk->numParticles;
+
+        // Check for this particle in the chunk
+        for (int j = 0; j < chunkParticles; ++j) {
+            Particle *other = chunk->particles[j];
+
+            if (other == particle) continue;
+
+            handleCollision(particle, other);
+        }
+
+        // Check for particles in adjacent chunks
+        for (int j = 0; j < 6; ++j) {
+            Chunk *adj = chunk->adj[j];
+
+            if (adj == NULL) continue;
+
+            const int adjParticles = adj->numParticles;
+
+            for (int k = 0; k < adjParticles; ++k) {
+                Particle *other = adj->particles[k];
+
+                handleCollision(particle, other);
+            }
         }
     }
 
@@ -95,7 +142,7 @@ void stepGlobal(Domain *domain) {
 }
 
 
-void startSimulation(Domain* visualizerDomain, int numParticles, int size_x, int size_y, int size_z) {
+void startSimulation(Domain* visualizerDomain, int numParticles, int size_x, int size_y, int size_z, float radius) {
     Domain domain;
 
     initDomain(&domain, size_x, size_y, size_z, numParticles);
@@ -103,33 +150,32 @@ void startSimulation(Domain* visualizerDomain, int numParticles, int size_x, int
     // spawn particles
     srand(time(NULL));
 
-    float slowdown = 50.0f;
-    float maxInitialVelocity = 100.0f * SUBSAMPLING * slowdown;
+    float maxInitialVelocity = (1000.0f * SUBSAMPLING) / SPEED;
 
     for (int i = 0; i < domain.numParticles; ++i) {
         Particle *particle = &domain.particles[i];
 
-        particle->pos[0] = rand() % domain.DIM_X;
-        particle->pos[1] = rand() % domain.DIM_Y;
-        particle->pos[2] = rand() % domain.DIM_Z;
+        particle->pos[0] = (float)rand() / RAND_MAX * domain.DIM_X;
+        particle->pos[1] = (float)rand() / RAND_MAX * domain.DIM_Y;
+        particle->pos[2] = (float)rand() / RAND_MAX * domain.DIM_Z;
 
-        // particle->pos[0] = 25.0f;
-        // particle->pos[1] = 25.0f;
-        // particle->pos[2] = 25.0f;
+        #ifdef REMDIM
+        particle->pos[2] = 0;
+        #endif
 
         particle->vel[0] = (rand() % 100) / maxInitialVelocity;
         particle->vel[1] = (rand() % 100) / maxInitialVelocity;
         particle->vel[2] = (rand() % 100) / maxInitialVelocity;
 
-        // particle->vel[0] = 0.0f;
-        // particle->vel[1] = 0.0f;
-        // particle->vel[2] = 0.0f;
+        #ifdef REMDIM
+        particle->vel[2] = 0.0f;
+        #endif
 
-        particle->col[0] = (rand() % 255) / 255.0f;
-        particle->col[1] = (rand() % 255) / 255.0f;
-        particle->col[2] = (rand() % 255) / 255.0f;
+        particle->col[0] = rand() % 255;
+        particle->col[1] = rand() % 255;
+        particle->col[2] = rand() % 255;
 
-        particle->radius = 0.1f;
+        particle->radius = radius;
     }
 
     const double frameDuration = 1.0 / TARGET_FPS;
@@ -138,12 +184,14 @@ void startSimulation(Domain* visualizerDomain, int numParticles, int size_x, int
     double elapsedTime;
     double totalTime = 0.0;
     int frameCount = 0;
+    bool runningSlow = false;
 
     while (1) {
         clock_gettime(CLOCK_MONOTONIC, &start);
 
         // Perform the simulation steps for subsampling
         for (int i = 0; i < SUBSAMPLING; ++i) {
+            updateChunks(&domain);
             stepGlobal(&domain);
         }
 
@@ -156,12 +204,17 @@ void startSimulation(Domain* visualizerDomain, int numParticles, int size_x, int
         totalTime += elapsedTime;
         frameCount++;
 
+        if (elapsedTime > frameDuration) {
+            runningSlow = true;
+        }
+
         if (frameCount % TARGET_FPS == 0) {
             double averageTime = totalTime / frameCount;
             printf("Average time per frame: %.6f seconds", averageTime);
 
-            if (averageTime > frameDuration) {
+            if (runningSlow) {
                 printf(" Warning: Running slow");
+                runningSlow = false;
             }
 
             printf("\n");

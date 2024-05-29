@@ -18,7 +18,7 @@
 extern "C" {
 #endif
 
-void startSimulation(Domain* domain, int numParticles, int size_x, int size_y, int size_z);
+void startSimulation(Domain* domain, int numParticles, int size_x, int size_y, int size_z, float radius);
 
 #ifdef __cplusplus
 }

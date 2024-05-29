@@ -65,7 +65,7 @@ else()
     target_link_libraries(ParticleSim PRIVATE ${GLEW_LIBRARIES} ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLM_LIBRARIES})
 endif()
 # Extra flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -fsanitize=address -fno-omit-frame-pointer -g")
 
 # Debug messages
 message(STATUS "Compile variant: ${VARIANT}")

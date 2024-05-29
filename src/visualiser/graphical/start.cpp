@@ -139,6 +139,7 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
         }
 
         cols.push_back(glm::vec3(red, particles[i].col[1] / 255.0f, blue));
+
     }
 }
 
@@ -235,19 +236,20 @@ void startVisualiser() {
     std::cout << "Compiled shader program." << std::endl;
 
     Config config;
-    config.dim[0] = 15;
-    config.dim[1] = 10;
-    config.dim[2] = 2;
+    config.dim[0] = 1;
+    config.dim[1] = 7;
+    config.dim[2] = 1;
 
-    config.friction = 0.98f;
+    config.friction = 0.95f;
+    config.repulsion = 0.05f;
+
     config.gravity = 0.01f;
-    config.speed = 0.1f;
-    config.subsampling = 1;
+    config.speed = 0.05f;
+    config.supsampling = 10;
 
-    config.numParticles = 7500;
-    config.radius = 0.08f;
-
-
+    config.numParticles = 10000;
+    config.radius = 0.05f;
+    config.targetChunkCount = pow(4, 8);
 
     Domain* renderDomain = getSimulationHandle(config);
 

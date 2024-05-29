@@ -11,12 +11,20 @@ void initDomain(Domain* domain, Config config) {
     domain->particles = (Particle*)malloc(config.numParticles * sizeof(Particle));
 
     // Compute chunks
-    domain->chunkSize = 1.0f;
+    const int targetChunkCount = config.targetChunkCount;
+
+    float totalVolume = config.dim[0] * config.dim[1] * config.dim[2];
+
+    // Calculate the ideal volume of each chunk
+    float idealChunkVolume = totalVolume / targetChunkCount;
+
+    // Calculate the chunk size based on the ideal volume
+    domain->chunkSize = cbrt(idealChunkVolume);
 
     // How many chunks do we need in each dimension?
-    int chunksX = config.dim[0] / domain->chunkSize;
-    int chunksY = config.dim[1] / domain->chunkSize;
-    int chunksZ = config.dim[2] / domain->chunkSize;
+    int chunksX = ceil(config.dim[0] / domain->chunkSize);
+    int chunksY = ceil(config.dim[1] / domain->chunkSize);
+    int chunksZ = ceil(config.dim[2] / domain->chunkSize);
 
     domain->chunkCounts[0] = chunksX;
     domain->chunkCounts[1] = chunksY;
@@ -49,7 +57,7 @@ void initDomain(Domain* domain, Config config) {
                     fprintf(stderr, "Memory allocation failed for chunks[%d][%d][%d].particles\n", i, j, k);
                     exit(1);
                 }
-                for (int l = 0; l < 6; ++l) {
+                for (int l = 0; l < 26; ++l) {
                     domain->chunks[i][j][k].adj[l] = NULL;
                 }
             }
@@ -61,23 +69,32 @@ void initDomain(Domain* domain, Config config) {
         for (int j = 0; j < chunksY; ++j) {
             for (int k = 0; k < chunksZ; ++k) {
                 Chunk *chunk = &domain->chunks[i][j][k];
-                if (i > 0) {
-                    chunk->adj[0] = &domain->chunks[i - 1][j][k];
-                }
-                if (i < chunksX - 1) {
-                    chunk->adj[1] = &domain->chunks[i + 1][j][k];
-                }
-                if (j > 0) {
-                    chunk->adj[2] = &domain->chunks[i][j - 1][k];
-                }
-                if (j < chunksY - 1) {
-                    chunk->adj[3] = &domain->chunks[i][j + 1][k];
-                }
-                if (k > 0) {
-                    chunk->adj[4] = &domain->chunks[i][j][k - 1];
-                }
-                if (k < chunksZ - 1) {
-                    chunk->adj[5] = &domain->chunks[i][j][k + 1];
+
+                // Iterate over neighboring indices
+                for (int ni = -1; ni <= 1; ++ni) {
+                    for (int nj = -1; nj <= 1; ++nj) {
+                        for (int nk = -1; nk <= 1; ++nk) {
+                            // Skip the current chunk itself
+                            if (ni == 0 && nj == 0 && nk == 0)
+                                continue;
+
+                            // Calculate neighbor indices
+                            int ni_index = i + ni;
+                            int nj_index = j + nj;
+                            int nk_index = k + nk;
+
+                            // Check if neighbor indices are within bounds
+                            if (ni_index >= 0 && ni_index < chunksX &&
+                                nj_index >= 0 && nj_index < chunksY &&
+                                nk_index >= 0 && nk_index < chunksZ) {
+                                // Access neighbor chunk
+                                Chunk *neighbor = &domain->chunks[ni_index][nj_index][nk_index];
+
+                                // Add neighbor to adjacency list
+                                chunk->adj[3 * (ni + 1) + (nj + 1) * 3 + (nk + 1)] = neighbor;
+                            }
+                        }
+                    }
                 }
             }
         }

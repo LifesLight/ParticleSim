@@ -4,9 +4,7 @@
  * Copyright (c) Alexander Kurtz 2024
  */
 
-#define TARGET_FPS 30
-
-// #define REMDIM
+#define TARGET_FPS 60
 
 void updateDraw(Domain *source, Domain *target) {
     // Update the visualizer domain
@@ -20,6 +18,8 @@ void stepGlobal(Domain *domain) {
 
     // Apply forces
     checkCollision(domain);
+
+    applyRepulsion(domain);
 
     // Global applies
     for (int i = 0; i < particles; i++) {
@@ -39,6 +39,8 @@ void stepGlobal(Domain *domain) {
     }
 }
 
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
 
 void startSimulation(Domain* visualizerDomain, Config config) {
     Domain domain;
@@ -48,33 +50,47 @@ void startSimulation(Domain* visualizerDomain, Config config) {
     // spawn particles
     srand(time(NULL));
 
-    float maxInitialVelocity = (1000.0f * config.subsampling) / config.speed;
+    float maxInitialVelocity = (1000.0f * config.supsampling) / config.speed;
 
-    for (int i = 0; i < domain.config.numParticles; ++i) {
-        Particle *particle = &domain.particles[i];
+// Calculate the volume of the domain
+float volume = (domain.config.dim[0] - 0.2) * (domain.config.dim[1] - 0.2) * (domain.config.dim[2] - 0.2);
 
-        particle->pos[0] = (float)rand() / RAND_MAX * (domain.config.dim[0] - 0.2) + 0.1;
-        particle->pos[1] = (float)rand() / RAND_MAX * (domain.config.dim[1] - 0.2) + 0.1;
-        particle->pos[2] = (float)rand() / RAND_MAX * (domain.config.dim[2] - 0.2) + 0.1;
+// Calculate the approximate spacing between particles to achieve even distribution
+float spacing = pow(volume / domain.config.numParticles, 1.0 / 3.0);
 
-        #ifdef REMDIM
-        particle->pos[2] = 0;
-        #endif
+// Calculate the number of particles along each dimension
+int numParticlesX = ceil((domain.config.dim[0] - 0.2) / spacing);
+int numParticlesY = ceil((domain.config.dim[1] - 0.2) / spacing);
+int numParticlesZ = ceil((domain.config.dim[2] - 0.2) / spacing);
 
-        particle->vel[0] = (rand() % 100) / maxInitialVelocity;
-        particle->vel[1] = (rand() % 100) / maxInitialVelocity;
-        particle->vel[2] = (rand() % 100) / maxInitialVelocity;
+// Recalculate the actual spacing based on the number of particles
+spacing = min((domain.config.dim[0] - 0.2) / numParticlesX, min((domain.config.dim[1] - 0.2) / numParticlesY, (domain.config.dim[2] - 0.2) / numParticlesZ));
 
-        #ifdef REMDIM
-        particle->vel[2] = 0.0f;
-        #endif
+for (int i = 0; i < domain.config.numParticles; ++i) {
+    Particle *particle = &domain.particles[i];
 
-        particle->col[0] = rand() % 255;
-        particle->col[1] = rand() % 255;
-        particle->col[2] = rand() % 255;
+    // Calculate the grid indices for each particle
+    int xIndex = i % numParticlesX;
+    int yIndex = (i / numParticlesX) % numParticlesY;
+    int zIndex = i / (numParticlesX * numParticlesY);
 
-        particle->radius = config.radius;
-    }
+    // Assign positions based on the grid indices, with padding added
+    particle->pos[0] = xIndex * spacing + 0.1;
+    particle->pos[1] = yIndex * spacing + 0.1;
+    particle->pos[2] = zIndex * spacing + 0.1;
+
+    // Velocity and color settings remain unchanged
+    particle->vel[0] = (rand() % 100) / maxInitialVelocity;
+    particle->vel[1] = (rand() % 100) / maxInitialVelocity;
+    particle->vel[2] = (rand() % 100) / maxInitialVelocity;
+
+    particle->col[0] = rand() % 255;
+    particle->col[1] = rand() % 255;
+    particle->col[2] = rand() % 255;
+
+    particle->radius = config.radius;
+}
+
 
     const double frameDuration = 1.0 / TARGET_FPS;
 
@@ -87,8 +103,8 @@ void startSimulation(Domain* visualizerDomain, Config config) {
     while (1) {
         clock_gettime(CLOCK_MONOTONIC, &start);
 
-        // Perform the simulation steps for subsampling
-        for (int i = 0; i < config.subsampling; ++i) {
+        // Perform the simulation steps for supsampling
+        for (int i = 0; i < config.supsampling; ++i) {
             updateChunks(&domain);
             stepGlobal(&domain);
         }

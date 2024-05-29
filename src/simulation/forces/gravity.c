@@ -8,6 +8,6 @@
 void applyGravity(Particle* particle, Domain *domain) {
     const float gravity = domain->config.gravity;
     const float speed = domain->config.speed;
-    const float subsampling = domain->config.subsampling;
-    particle->vel[1] -= (gravity / subsampling) * speed;
+    const float supsampling = domain->config.supsampling;
+    particle->vel[1] -= (gravity / supsampling) * speed;
 }

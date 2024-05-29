@@ -9,12 +9,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 // Predeclare Chunk
 typedef struct Chunk Chunk;
 
 struct Chunk {
-    Chunk *adj[6];
+    Chunk *adj[26];
 
     int numParticles;
     Particle **particles;

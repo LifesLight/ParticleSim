@@ -19,6 +19,7 @@ set(SOURCES_COMMON
     src/simulation/forces/boundary.c
     src/simulation/forces/gravity.c
     src/simulation/forces/collision.c
+    src/simulation/forces/repulsion.c
 )
 
 if (TERMINAL)
@@ -68,7 +69,7 @@ else()
     target_link_libraries(ParticleSim PRIVATE ${GLEW_LIBRARIES} ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLM_LIBRARIES})
 endif()
 # Extra flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -flto -march=native")
 
 # Debug messages
 message(STATUS "Compile variant: ${VARIANT}")

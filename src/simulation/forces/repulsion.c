@@ -1,48 +1,46 @@
-#include "simulation/forces/collision.h"
+#include "simulation/forces/repulsion.h"
 
 /**
  * Copyright (c) Alexander Kurtz 2024
  */
 
-void handleCollision(Particle* a, Particle* b, float friction) {
+
+void handleRepulsion(Particle* a, Particle* b, float forceFactor) {
+    // Calculate the direction from particle b to particle a
     float dx = a->pos[0] - b->pos[0];
     float dy = a->pos[1] - b->pos[1];
     float dz = a->pos[2] - b->pos[2];
 
+    // Calculate the distance between particles
     float distance = sqrtf(dx * dx + dy * dy + dz * dz);
 
-    if (distance < a->radius + b->radius) {
-        // Normal vector
+    // Check overlap
+    float overlap = a->radius + b->radius - distance;
+
+    if (overlap > 0) {
+        // Calculate the force to apply
+        float force = overlap * forceFactor;
+
+        // Normalize the direction vector
         float nx = dx / distance;
         float ny = dy / distance;
         float nz = dz / distance;
 
-        // Relative velocity
-        float vx = a->vel[0] - b->vel[0];
-        float vy = a->vel[1] - b->vel[1];
-        float vz = a->vel[2] - b->vel[2];
+        // Apply the force to both particles
+        a->vel[0] += force * nx;
+        a->vel[1] += force * ny;
+        a->vel[2] += force * nz;
 
-        // Dot product of relative velocity and normal vector
-        float vDotN = vx * nx + vy * ny + vz * nz;
-
-        // Only resolve if particles are moving towards each other
-        if (vDotN > 0) return;
-
-        // Collision response
-        float impulse = vDotN * friction;
-
-        a->vel[0] -= impulse * nx;
-        a->vel[1] -= impulse * ny;
-        a->vel[2] -= impulse * nz;
-
-        b->vel[0] += impulse * nx;
-        b->vel[1] += impulse * ny;
-        b->vel[2] += impulse * nz;
+        b->vel[0] -= force * nx;
+        b->vel[1] -= force * ny;
+        b->vel[2] -= force * nz;
     }
 }
 
-void checkCollision(Domain *domain) {
+void applyRepulsion(Domain *domain) {
     const size_t particles = domain->config.numParticles;
+
+    const float repulsion = domain->config.repulsion * domain->config.speed;
 
     // Check for collisions
     for (int i = 0; i < particles; ++i) {
@@ -61,7 +59,7 @@ void checkCollision(Domain *domain) {
 
             if (other == particle) continue;
 
-            handleCollision(particle, other, domain->config.friction);
+            handleRepulsion(particle, other, repulsion);
         }
 
         // Check for particles in adjacent chunks
@@ -75,7 +73,7 @@ void checkCollision(Domain *domain) {
             for (int k = 0; k < adjParticles; ++k) {
                 Particle *other = adj->particles[k];
 
-                handleCollision(particle, other, domain->config.friction);
+                handleRepulsion(particle, other, repulsion);
             }
         }
     }

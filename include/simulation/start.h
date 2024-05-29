@@ -10,6 +10,7 @@
 #include "simulation/forces/boundary.h"
 #include "simulation/forces/gravity.h"
 #include "simulation/forces/collision.h"
+#include "simulation/forces/repulsion.h"
 
 #include <stdio.h>
 #include <stdlib.h>

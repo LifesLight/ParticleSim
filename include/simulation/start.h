@@ -7,6 +7,10 @@
 #include "simulation/containers/domain.h"
 #include "simulation/containers/particle.h"
 
+#include "simulation/forces/boundary.h"
+#include "simulation/forces/gravity.h"
+#include "simulation/forces/collision.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,7 +22,7 @@
 extern "C" {
 #endif
 
-void startSimulation(Domain* domain, int numParticles, int size_x, int size_y, int size_z, float radius);
+void startSimulation(Domain* domain, Config config);
 
 #ifdef __cplusplus
 }

@@ -5,6 +5,7 @@
  */
 
 #include "simulation/containers/particle.h"
+#include "simulation/containers/domainConfig.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,19 +21,16 @@ struct Chunk {
 };
 
 typedef struct {
-    int DIM_X;
-    int DIM_Y;
-    int DIM_Z;
-
     bool drawable;
     Particle *particles;
-    size_t numParticles;
 
     float chunkSize;
     int chunkCounts[3];
     Chunk ***chunks;
+
+    Config config;
 } Domain;
 
-void initDomain(Domain* domain, int size_x, int size_y, int size_z, int numParticles);
+void initDomain(Domain* domain, Config config);
 
 void updateChunks(Domain* domain);

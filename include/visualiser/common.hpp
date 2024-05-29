@@ -11,4 +11,4 @@
 
 using std::thread;
 
-Domain* getSimulationHandle(int size_x, int size_y, int size_z, int numParticles, float radius);
+Domain* getSimulationHandle(Config config);

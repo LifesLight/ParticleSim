@@ -234,13 +234,22 @@ void startVisualiser() {
 
     std::cout << "Compiled shader program." << std::endl;
 
-    const int numParticles = 7500;
-    const int DIM_X = 1;
-    const int DIM_Y = 15;
-    const int DIM_Z = 15;
-    const float radius = 0.08f;
+    Config config;
+    config.dim[0] = 15;
+    config.dim[1] = 10;
+    config.dim[2] = 2;
 
-    Domain* renderDomain = getSimulationHandle(DIM_X, DIM_Y, DIM_Z, numParticles, radius);
+    config.friction = 0.98f;
+    config.gravity = 0.01f;
+    config.speed = 0.1f;
+    config.subsampling = 1;
+
+    config.numParticles = 7500;
+    config.radius = 0.08f;
+
+
+
+    Domain* renderDomain = getSimulationHandle(config);
 
     while (!renderDomain->drawable) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -250,7 +259,7 @@ void startVisualiser() {
     std::vector<glm::vec3> cords;
     std::vector<glm::vec3> colors;
 
-    updatePoints(particles, numParticles, cords, colors, DIM_X, DIM_Y, DIM_Z);
+    updatePoints(particles, config.numParticles, cords, colors, config.dim[0], config.dim[1], config.dim[2]);
 
     GLuint VBO, CBO;
     glGenBuffers(1, &VBO);
@@ -283,7 +292,7 @@ void startVisualiser() {
             glClearColor(0.831372549, 0.7960784314f, 0.8980392157f, 1.0f);
 
             if (renderDomain->drawable) {
-                updatePoints(particles, numParticles, cords, colors, DIM_X, DIM_Y, DIM_Z);
+                updatePoints(particles, config.numParticles, cords, colors, config.dim[0], config.dim[1], config.dim[2]);
 
                 glBindBuffer(GL_ARRAY_BUFFER, VBO);
                 glBufferSubData(GL_ARRAY_BUFFER, 0, cords.size() * sizeof(glm::vec3), cords.data());
@@ -299,7 +308,7 @@ void startVisualiser() {
             glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 1000.0f);
             glm::mat4 view = glm::lookAt(glm::vec3(camX, camY, camZ), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-            drawChunkBorder(DIM_X, DIM_Y, DIM_Z);
+            drawChunkBorder(config.dim[0], config.dim[1], config.dim[2]);
 
             glUseProgram(shaderProgram);
 
@@ -314,7 +323,7 @@ void startVisualiser() {
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-            glPointSize((radius * 1000) / sqrt(camera_radius));
+            glPointSize((config.radius * 1000) / sqrt(camera_radius));
             glDrawArrays(GL_POINTS, 0, cords.size());
 
             glDisableVertexAttribArray(0);

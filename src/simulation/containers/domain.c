@@ -4,22 +4,19 @@
  * Copyright (c) Alexander Kurtz 2024
  */
 
-void initDomain(Domain* domain, int x, int y, int z, int numParticles) {
-    domain->DIM_X = x;
-    domain->DIM_Y = y;
-    domain->DIM_Z = z;
-    domain->numParticles = numParticles;
+void initDomain(Domain* domain, Config config) {
+    domain->config = config;
 
     // Allocate memory for the particles
-    domain->particles = (Particle*)malloc(numParticles * sizeof(Particle));
+    domain->particles = (Particle*)malloc(config.numParticles * sizeof(Particle));
 
     // Compute chunks
     domain->chunkSize = 1.0f;
 
     // How many chunks do we need in each dimension?
-    int chunksX = x / domain->chunkSize;
-    int chunksY = y / domain->chunkSize;
-    int chunksZ = z / domain->chunkSize;
+    int chunksX = config.dim[0] / domain->chunkSize;
+    int chunksY = config.dim[1] / domain->chunkSize;
+    int chunksZ = config.dim[2] / domain->chunkSize;
 
     domain->chunkCounts[0] = chunksX;
     domain->chunkCounts[1] = chunksY;
@@ -47,7 +44,7 @@ void initDomain(Domain* domain, int x, int y, int z, int numParticles) {
             }
             for (int k = 0; k < chunksZ; ++k) {
                 domain->chunks[i][j][k].numParticles = 0;
-                domain->chunks[i][j][k].particles = (Particle**)malloc(numParticles * sizeof(Particle*));
+                domain->chunks[i][j][k].particles = (Particle**)malloc(config.numParticles * sizeof(Particle*));
                 if (domain->chunks[i][j][k].particles == NULL) {
                     fprintf(stderr, "Memory allocation failed for chunks[%d][%d][%d].particles\n", i, j, k);
                     exit(1);
@@ -88,9 +85,9 @@ void initDomain(Domain* domain, int x, int y, int z, int numParticles) {
 }
 
 void updateChunks(Domain* domain) {
-    const int DIM_X = domain->DIM_X;
-    const int DIM_Y = domain->DIM_Y;
-    const int DIM_Z = domain->DIM_Z;
+    const int DIM_X = domain->config.dim[0];
+    const int DIM_Y = domain->config.dim[1];
+    const int DIM_Z = domain->config.dim[2];
 
     const float chunkSize = domain->chunkSize;
 
@@ -106,7 +103,7 @@ void updateChunks(Domain* domain) {
     }
 
     // Update chunks
-    for (int i = 0; i < domain->numParticles; ++i) {
+    for (int i = 0; i < domain->config.numParticles; ++i) {
         Particle *particle = &domain->particles[i];
 
         // Check if particle positions are within domain boundaries
@@ -114,7 +111,7 @@ void updateChunks(Domain* domain) {
             particle->pos[1] < 0 || particle->pos[1] >= DIM_Y ||
             particle->pos[2] < 0 || particle->pos[2] >= DIM_Z) {
             fprintf(stderr, "Particle %d position out of bounds: (%f, %f, %f)\n", i, particle->pos[0], particle->pos[1], particle->pos[2]);
-            continue;
+            exit(1);
         }
 
         int chunkX = particle->pos[0] / chunkSize;
@@ -126,7 +123,7 @@ void updateChunks(Domain* domain) {
             chunkY < 0 || chunkY >= domain->chunkCounts[1] ||
             chunkZ < 0 || chunkZ >= domain->chunkCounts[2]) {
             fprintf(stderr, "Calculated chunk index out of bounds for particle %d: (%d, %d, %d)\n", i, chunkX, chunkY, chunkZ);
-            continue;
+            exit(1);
         }
 
         Chunk *chunk = &domain->chunks[chunkX][chunkY][chunkZ];

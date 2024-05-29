@@ -16,6 +16,9 @@ set(SOURCES_COMMON
     src/simulation/containers/domain.c
     src/simulation/start.c
     src/visualiser/common.cpp
+    src/simulation/forces/boundary.c
+    src/simulation/forces/gravity.c
+    src/simulation/forces/collision.c
 )
 
 if (TERMINAL)
@@ -65,7 +68,7 @@ else()
     target_link_libraries(ParticleSim PRIVATE ${GLEW_LIBRARIES} ${GLFW_LIBRARIES} ${OPENGL_LIBRARIES} ${GLM_LIBRARIES})
 endif()
 # Extra flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -fsanitize=address -fno-omit-frame-pointer -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 # Debug messages
 message(STATUS "Compile variant: ${VARIANT}")

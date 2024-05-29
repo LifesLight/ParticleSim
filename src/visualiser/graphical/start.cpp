@@ -143,51 +143,65 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
 }
 
 void drawChunkBorder(int DIM_X, int DIM_Y, int DIM_Z) {
+    // Calculate the half dimensions with rounding
+    float halfDimX = DIM_X / 2.0f;
+    float halfDimY = DIM_Y / 2.0f;
+    float halfDimZ = DIM_Z / 2.0f;
+
+    // Apply rounding
+    float xNeg = ceil(-halfDimX);
+    float xPos = ceil(halfDimX);
+    float yNeg = ceil(-halfDimY);
+    float yPos = ceil(halfDimY);
+    float zNeg = ceil(-halfDimZ);
+    float zPos = ceil(halfDimZ);
+
     // Draw the border of the chunk
     glBegin(GL_LINES);
     glColor3f(1.0f, 1.0f, 1.0f);
 
     // Front face
-    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
-    glVertex3f(DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(zNeg, yNeg, xNeg);
+    glVertex3f(zPos, yNeg, xNeg);
 
-    glVertex3f(DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
-    glVertex3f(DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(zPos, yNeg, xNeg);
+    glVertex3f(zPos, yPos, xNeg);
 
-    glVertex3f(DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
-    glVertex3f(-DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(zPos, yPos, xNeg);
+    glVertex3f(zNeg, yPos, xNeg);
 
-    glVertex3f(-DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
-    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
+    glVertex3f(zNeg, yPos, xNeg);
+    glVertex3f(zNeg, yNeg, xNeg);
 
     // Back face
-    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
-    glVertex3f(DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+    glVertex3f(zNeg, yNeg, xPos);
+    glVertex3f(zPos, yNeg, xPos);
 
-    glVertex3f(DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
-    glVertex3f(DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+    glVertex3f(zPos, yNeg, xPos);
+    glVertex3f(zPos, yPos, xPos);
 
-    glVertex3f(DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
-    glVertex3f(-DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+    glVertex3f(zPos, yPos, xPos);
+    glVertex3f(zNeg, yPos, xPos);
 
-    glVertex3f(-DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
-    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+    glVertex3f(zNeg, yPos, xPos);
+    glVertex3f(zNeg, yNeg, xPos);
 
     // Connect front and back faces
-    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
-    glVertex3f(-DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+    glVertex3f(zNeg, yNeg, xNeg);
+    glVertex3f(zNeg, yNeg, xPos);
 
-    glVertex3f(DIM_Z / 2, -DIM_Y / 2, -DIM_X / 2);
-    glVertex3f(DIM_Z / 2, -DIM_Y / 2, DIM_X / 2);
+    glVertex3f(zPos, yNeg, xNeg);
+    glVertex3f(zPos, yNeg, xPos);
 
-    glVertex3f(DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
-    glVertex3f(DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+    glVertex3f(zPos, yPos, xNeg);
+    glVertex3f(zPos, yPos, xPos);
 
-    glVertex3f(-DIM_Z / 2, DIM_Y / 2, -DIM_X / 2);
-    glVertex3f(-DIM_Z / 2, DIM_Y / 2, DIM_X / 2);
+    glVertex3f(zNeg, yPos, xNeg);
+    glVertex3f(zNeg, yPos, xPos);
 
     glEnd();
 }
+
 
 
 void startVisualiser() {
@@ -221,9 +235,9 @@ void startVisualiser() {
     std::cout << "Compiled shader program." << std::endl;
 
     const int numParticles = 7500;
-    const int DIM_X = 10;
-    const int DIM_Y = 8;
-    const int DIM_Z = 2;
+    const int DIM_X = 1;
+    const int DIM_Y = 15;
+    const int DIM_Z = 15;
     const float radius = 0.08f;
 
     Domain* renderDomain = getSimulationHandle(DIM_X, DIM_Y, DIM_Z, numParticles, radius);

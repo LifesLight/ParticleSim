@@ -40,7 +40,7 @@ void handleRepulsion(Particle* a, Particle* b, float forceFactor) {
 void applyRepulsion(Domain *domain) {
     const size_t particles = domain->config.numParticles;
 
-    const float repulsion = domain->config.repulsion / domain->config.__internalSpeedDividor;
+    const float repulsion = domain->config.repulsion * domain->config.__internalSpeedFactor;
 
     // Check for collisions
     for (int i = 0; i < particles; ++i) {

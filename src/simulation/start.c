@@ -48,22 +48,29 @@ void startSimulation(Domain* visualizerDomain, Config config) {
     // spawn particles
     srand(time(NULL));
 
-    float maxInitialVelocity = 0.01f / domain.config.__internalSpeedDividor;
+    float maxInitialVelocity = 0.005f * domain.config.__internalSpeedFactor;
+
+    printf("Timestep scaling factor: %f\n", domain.config.__internalSpeedFactor);
 
     // Calculate the volume of the domain
-    float volume = (domain.config.dim[0] - 0.2) * (domain.config.dim[1] - 0.2) * (domain.config.dim[2] - 0.2);
+    int custPointScatX = domain.config.dim[0];
+    int custPointScatY = domain.config.dim[1] / 2;
+    int custPointScatZ = domain.config.dim[2] / 4;
+
+    float volume = (custPointScatX - 0.2) * (custPointScatY - 0.2) * (custPointScatZ - 0.2);
 
     // Calculate the approximate spacing between particles to achieve even distribution
     float spacing = pow(volume / domain.config.numParticles, 1.0 / 3.0);
 
     // Calculate the number of particles along each dimension
-    int numParticlesX = ceil((domain.config.dim[0] - 0.2) / spacing);
-    int numParticlesY = ceil((domain.config.dim[1] - 0.2) / spacing);
-    int numParticlesZ = ceil((domain.config.dim[2] - 0.2) / spacing);
+    int numParticlesX = ceil((custPointScatX - 0.2) / spacing);
+    int numParticlesY = ceil((custPointScatY - 0.2) / spacing);
+    int numParticlesZ = ceil((custPointScatZ - 0.2) / spacing);
 
     // Recalculate the actual spacing based on the number of particles
-    spacing = min((domain.config.dim[0] - 0.2) / numParticlesX, min((domain.config.dim[1] - 0.2) / numParticlesY, (domain.config.dim[2] - 0.2) / numParticlesZ));
+    spacing = min((custPointScatX - 0.2) / numParticlesX, min((custPointScatY - 0.2) / numParticlesY, (custPointScatZ - 0.2) / numParticlesZ));
 
+    // Initialize the particles
     for (int i = 0; i < domain.config.numParticles; ++i) {
         Particle *particle = &domain.particles[i];
 
@@ -79,7 +86,7 @@ void startSimulation(Domain* visualizerDomain, Config config) {
 
         // Velocity and color settings remain unchanged
         particle->vel[0] = (rand() % 100) * maxInitialVelocity;
-        particle->vel[1] = (rand() % 100) * maxInitialVelocity;
+        particle->vel[1] = 0;//(rand() % 100) * maxInitialVelocity;
         particle->vel[2] = (rand() % 100) * maxInitialVelocity;
 
         particle->col[0] = rand() % 255;

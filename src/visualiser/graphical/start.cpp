@@ -6,7 +6,7 @@
 
 const int WIDTH = 1000;
 const int HEIGHT = 1000;
-const double FPS = 60.0;
+const double FPS = 120.0;
 const double frameDuration = 1.0 / FPS;
 
 float camera_yaw = 0.0f;
@@ -117,9 +117,8 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
     cols.clear();
     for (size_t i = 0; i < numParticles; i++) {
         cords.push_back(glm::vec3(particles[i].pos[2] - DIM_Z / 2, particles[i].pos[1] - DIM_Y / 2, particles[i].pos[0] - DIM_X / 2));
-        cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]) / 255.0f);
+        // cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]) / 255.0f);
 
-/**
         float totalVel = sqrt(particles[i].vel[0] * particles[i].vel[0] + particles[i].vel[1] * particles[i].vel[1] + particles[i].vel[2] * particles[i].vel[2]);
         if (totalVel < 0.0f) {
             totalVel *= -1;
@@ -139,7 +138,6 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
         }
 
         cols.push_back(glm::vec3(red, particles[i].col[1] / 255.0f, blue));
-*/
     }
 }
 
@@ -236,21 +234,21 @@ void startVisualiser() {
     std::cout << "Compiled shader program." << std::endl;
 
     Config config;
-    config.dim[0] = 15;
-    config.dim[1] = 10;
-    config.dim[2] = 15;
+    config.dim[0] = 50;
+    config.dim[1] = 25;
+    config.dim[2] = 100;
 
     config.friction = 0.98f;
-    config.repulsion = 0.1f;
+    config.repulsion = 0.001f;
 
     config.gravity = 0.01f;
-    config.speed = 1.0f;
+    config.speed = 0.001f;
     config.supsampling = 1;
     config.fps = 60;
 
-    config.numParticles = 10000;
-    config.radius = 0.2f;
-    config.targetChunkCount = pow(4, 8);
+    config.numParticles = 40000;
+    config.radius = 0.5f;
+    config.targetChunkCount = pow(4, 9);
 
     Domain* renderDomain = getSimulationHandle(config);
 

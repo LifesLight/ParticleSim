@@ -6,5 +6,5 @@
 
 
 void applyGravity(Particle* particle, Domain *domain) {
-    particle->vel[1] -= domain->config.gravity / domain->config.__internalSpeedDividor;
+    particle->vel[1] -= domain->config.gravity * domain->config.__internalSpeedFactor;
 }

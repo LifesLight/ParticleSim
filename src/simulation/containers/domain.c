@@ -5,7 +5,7 @@
  */
 
 void initDomain(Domain* domain, Config config) {
-    config.__internalSpeedDividor = ((float) config.fps) * ((float) config.supsampling) / (float) config.speed;
+    config.__internalSpeedFactor = (float) config.speed * ((float) config.fps) / ((float) config.supsampling);
     domain->config = config;
 
     // Allocate memory for the particles
@@ -31,6 +31,10 @@ void initDomain(Domain* domain, Config config) {
     domain->chunkCounts[1] = chunksY;
     domain->chunkCounts[2] = chunksZ;
 
+    const int defaultChunkStorage = config.numParticles / (chunksX * chunksY * chunksZ) + 1;
+
+    printf("Chunk size: %f\n", domain->chunkSize);
+
     printf("Chunks: %d %d %d\n", chunksX, chunksY, chunksZ);
 
     // Allocate memory for the chunks
@@ -53,7 +57,8 @@ void initDomain(Domain* domain, Config config) {
             }
             for (int k = 0; k < chunksZ; ++k) {
                 domain->chunks[i][j][k].numParticles = 0;
-                domain->chunks[i][j][k].particles = (Particle**)malloc(config.numParticles * sizeof(Particle*));
+                domain->chunks[i][j][k].size = defaultChunkStorage;
+                domain->chunks[i][j][k].particles = (Particle**)malloc(defaultChunkStorage * sizeof(Particle*));
                 if (domain->chunks[i][j][k].particles == NULL) {
                     fprintf(stderr, "Memory allocation failed for chunks[%d][%d][%d].particles\n", i, j, k);
                     exit(1);
@@ -102,6 +107,24 @@ void initDomain(Domain* domain, Config config) {
     }
 }
 
+void resizeParticleChunk(Chunk *chunk) {
+    if (chunk->numParticles >= chunk->size) {
+        Particle **newParticles = NULL;
+        int newSize = chunk->size * 2;
+
+        newParticles = (Particle**)realloc(chunk->particles, newSize * sizeof(Particle*));
+
+        if (newParticles == NULL) {
+            fprintf(stderr, "Memory allocation failed for chunk resize %d\n", newSize);
+            exit(1);
+        }
+
+        chunk->particles = newParticles;
+        chunk->size = newSize;
+    }
+}
+
+
 void updateChunks(Domain* domain) {
     const int DIM_X = domain->config.dim[0];
     const int DIM_Y = domain->config.dim[1];
@@ -145,6 +168,10 @@ void updateChunks(Domain* domain) {
         }
 
         Chunk *chunk = &domain->chunks[chunkX][chunkY][chunkZ];
+
+        // Resize the chunk if necessary
+        resizeParticleChunk(chunk);
+
         chunk->particles[chunk->numParticles] = particle;
         chunk->numParticles++;
     }

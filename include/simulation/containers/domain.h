@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 
 // Predeclare Chunk
 typedef struct Chunk Chunk;
@@ -18,6 +19,7 @@ struct Chunk {
     Chunk *adj[26];
 
     int numParticles;
+    int size;
     Particle **particles;
 };
 

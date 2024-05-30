@@ -22,5 +22,5 @@ typedef struct {
 
     int targetChunkCount;
 
-    float __internalSpeedDividor;
+    float __internalSpeedFactor;
 } Config;

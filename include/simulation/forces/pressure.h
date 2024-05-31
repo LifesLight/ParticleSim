@@ -11,4 +11,4 @@
 
 #include <math.h>
 
-void handleRepulsion(Particle *a, Particle *b, float distance, float repulsion);
+void handlePressure(Domain *domain);

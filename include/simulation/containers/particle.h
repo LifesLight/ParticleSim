@@ -15,6 +15,8 @@ typedef struct {
     V3 vel;
     float mass;
     float density;
+    float pressure;
+    float radius;
 
     // Visual properties
     uint8_t col[3];

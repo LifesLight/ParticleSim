@@ -11,6 +11,7 @@ void updateDraw(Domain *source, Domain *target) {
     source->drawable = false;
 }
 
+/**
 void handleParticleInteraction(Particle *a, Particle *b, Domain *domain) {
     const V3 delta = sub3(&a->pos, &b->pos);
     float distance = len3(&delta);
@@ -21,47 +22,13 @@ void handleParticleInteraction(Particle *a, Particle *b, Domain *domain) {
     handleRepulsion(a, b, distance, repulsion);
     handleCollision(a, b, distance, friction);
 }
+*/
 
 void stepGlobal(Domain *domain) {
     const size_t particles = domain->config.numParticles;
 
     // Apply forces
-    for (int i = 0; i < particles; ++i) {
-        Particle *particle = &domain->particles[i];
-
-        const V3 temp = div3(&particle->pos, domain->chunkSize);
-
-        const int chunkX = temp.x;
-        const int chunkY = temp.y;
-        const int chunkZ = temp.z;
-
-        Chunk *chunk = &domain->chunks[chunkX][chunkY][chunkZ];
-        const int chunkParticles = chunk->numParticles;
-
-        // Check for this particle in the chunk
-        for (int j = 0; j < chunkParticles; ++j) {
-            Particle *other = chunk->particles[j];
-
-            if (other == particle) continue;
-
-            handleParticleInteraction(particle, other, domain);
-        }
-
-        // Check for particles in adjacent chunks
-        for (int j = 0; j < 26; ++j) {
-            Chunk *adj = chunk->adj[j];
-
-            if (adj == NULL) continue;
-
-            const int adjParticles = adj->numParticles;
-
-            for (int k = 0; k < adjParticles; ++k) {
-                Particle *other = adj->particles[k];
-
-                handleParticleInteraction(particle, other, domain);
-            }
-        }
-    }
+    handlePressure(domain);
 
     // Global applies
     for (int i = 0; i < particles; i++) {
@@ -138,7 +105,8 @@ void startSimulation(Domain* visualizerDomain, Config config) {
         particle->col[1] = rand() % 255;
         particle->col[2] = rand() % 255;
 
-        particle->mass = config.mass;
+        particle->radius = config.radius;
+        particle->mass = 0.00000001;
     }
 
 

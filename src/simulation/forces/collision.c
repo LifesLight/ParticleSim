@@ -7,7 +7,7 @@
 void handleCollision(Particle* a, Particle* b, float distance, float friction) {
     V3 dif = sub3(&a->pos, &b->pos);
 
-    if (distance < a->mass + b->mass) {
+    if (distance < a->radius + b->radius) {
         // Normal vector
         V3 normal = div3(&dif, distance);
 

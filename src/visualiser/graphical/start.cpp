@@ -117,8 +117,17 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
     cols.clear();
     for (size_t i = 0; i < numParticles; i++) {
         cords.push_back(glm::vec3(particles[i].pos.z - DIM_Z / 2, particles[i].pos.y - DIM_Y / 2, particles[i].pos.x - DIM_X / 2));
-//        cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]) / 255.0f);
 
+        glm::vec3 color;
+
+        color.r = particles[i].pressure * 0.1;
+        color.g = 0;
+        color.b = 0;
+
+        cols.push_back(color);
+
+//        cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]) / 255.0f);
+/**
         float totalVel = sqrt(particles[i].vel.x * particles[i].vel.x + particles[i].vel.y * particles[i].vel.y + particles[i].vel.z * particles[i].vel.z);
         totalVel /= (speed * 500);
 
@@ -140,7 +149,8 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
         }
 
         cols.push_back(glm::vec3(red, particles[i].col[1] / 255.0f, blue));
-
+    }
+*/
     }
 }
 
@@ -239,7 +249,7 @@ void startVisualiser() {
     Config config;
     config.dim[0] = 75;
     config.dim[1] = 50;
-    config.dim[2] = 10;
+    config.dim[2] = 50;
 
     config.friction = 0.9;
     config.repulsion = 0.01f;
@@ -249,8 +259,8 @@ void startVisualiser() {
     config.supsampling = 1;
     config.fps = 60;
 
-    config.numParticles = 20000;
-    config.mass = 0.5f;
+    config.numParticles = 10000;
+    config.radius = 0.5f;
     config.targetChunkCount = pow(4, 9);
 
     Domain* renderDomain = getSimulationHandle(config);
@@ -332,7 +342,7 @@ void startVisualiser() {
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-            glPointSize((config.mass * 1000) / sqrt(camera_radius));
+            glPointSize((config.radius * 1000) / sqrt(camera_radius));
             glDrawArrays(GL_POINTS, 0, cords.size());
 
             glDisableVertexAttribArray(0);

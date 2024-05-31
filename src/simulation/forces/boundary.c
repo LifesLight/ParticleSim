@@ -20,27 +20,27 @@ void checkBoundaries(Particle *particle, Domain *domain) {
     const float friction = domain->config.friction;
 
     // Check if we would go out of bounds and correct position and velocity if necessary
-    if (newPosX - particle->mass < 0) {
+    if (newPosX - particle->radius < 0) {
         particle->vel.x *= -friction;
-        particle->pos.x = particle->mass;
-    } else if (newPosX + particle->mass >= DIM_X) {
+        particle->pos.x = particle->radius;
+    } else if (newPosX + particle->radius >= DIM_X) {
         particle->vel.x *= -friction;
-        particle->pos.x = DIM_X - particle->mass;
+        particle->pos.x = DIM_X - particle->radius;
     }
 
-    if (newPosY - particle->mass < 0) {
+    if (newPosY - particle->radius < 0) {
         particle->vel.y *= -friction;
-        particle->pos.y = particle->mass;
-    } else if (newPosY + particle->mass >= DIM_Y) {
+        particle->pos.y = particle->radius;
+    } else if (newPosY + particle->radius >= DIM_Y) {
         particle->vel.y *= -friction;
-        particle->pos.y = DIM_Y - particle->mass;
+        particle->pos.y = DIM_Y - particle->radius;
     }
 
-    if (newPosZ - particle->mass < 0) {
+    if (newPosZ - particle->radius < 0) {
         particle->vel.z *= -friction;
-        particle->pos.z = particle->mass;
-    } else if (newPosZ + particle->mass >= DIM_Z) {
+        particle->pos.z = particle->radius;
+    } else if (newPosZ + particle->radius >= DIM_Z) {
         particle->vel.z *= -friction;
-        particle->pos.z = DIM_Z - particle->mass;
+        particle->pos.z = DIM_Z - particle->radius;
     }
 }

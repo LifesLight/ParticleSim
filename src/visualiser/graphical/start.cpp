@@ -10,8 +10,8 @@ const double FPS = 120.0;
 const double frameDuration = 1.0 / FPS;
 
 float camera_yaw = 0.0f;
-float camera_pitch = 0.0f;
-float camera_radius = 10.0f;
+float camera_pitch = 20.0f;
+float camera_radius = 125.0f;
 float camera_speed = 0.1f;
 bool mouse_pressed = false;
 double last_mouse_x = 0.0;
@@ -238,11 +238,11 @@ void startVisualiser() {
 
     Config config;
     config.dim[0] = 75;
-    config.dim[1] = 25;
-    config.dim[2] = 15;
+    config.dim[1] = 50;
+    config.dim[2] = 10;
 
-    config.friction = 0.5f;
-    config.repulsion = 0.025f;
+    config.friction = 0.9;
+    config.repulsion = 0.01f;
 
     config.gravity = {0.0f, -0.01f, 0.0f}; 
     config.speed = 0.01f;
@@ -250,7 +250,7 @@ void startVisualiser() {
     config.fps = 60;
 
     config.numParticles = 20000;
-    config.radius = 0.5f;
+    config.mass = 0.5f;
     config.targetChunkCount = pow(4, 9);
 
     Domain* renderDomain = getSimulationHandle(config);
@@ -306,6 +306,8 @@ void startVisualiser() {
 
                 glBindBuffer(GL_ARRAY_BUFFER, CBO);
                 glBufferSubData(GL_ARRAY_BUFFER, 0, colors.size() * sizeof(glm::vec3), colors.data());
+
+                renderDomain->drawable = false;
             }
 
             float camX = std::cos(glm::radians(camera_yaw)) * std::cos(glm::radians(camera_pitch)) * camera_radius;
@@ -330,7 +332,7 @@ void startVisualiser() {
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
-            glPointSize((config.radius * 1000) / sqrt(camera_radius));
+            glPointSize((config.mass * 1000) / sqrt(camera_radius));
             glDrawArrays(GL_POINTS, 0, cords.size());
 
             glDisableVertexAttribArray(0);

@@ -48,6 +48,6 @@ V3 cross3(const V3 *a, const V3 *b) {
     };
 }
 
-float length3(const V3 *a) {
+float len3(const V3 *a) {
     return sqrtf(a->x * a->x + a->y * a->y + a->z * a->z);
 }

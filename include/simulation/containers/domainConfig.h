@@ -20,7 +20,7 @@ typedef struct {
     int fps;
 
     size_t numParticles;
-    float radius;
+    float mass;
 
     int targetChunkCount;
 

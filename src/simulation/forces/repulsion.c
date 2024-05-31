@@ -6,14 +6,14 @@
 
 
 void handleRepulsion(Particle *a, Particle *b, float distance, float repulsion) {
-    float overlap = a->radius + b->radius - distance;
+    float overlap = a->mass + b->mass - distance;
 
     if (overlap > 0) {
         float force = overlap * repulsion;
 
         V3 dif = sub3(&a->pos, &b->pos);
 
-        float norm = length3(&dif);
+        float norm = len3(&dif);
 
         const V3 normal = div3(&dif, norm);
 

@@ -13,10 +13,10 @@ void updateDraw(Domain *source, Domain *target) {
 
 void handleParticleInteraction(Particle *a, Particle *b, Domain *domain) {
     const V3 delta = sub3(&a->pos, &b->pos);
-    float distance = length3(&delta);
+    float distance = len3(&delta);
 
-    float repulsion = domain->config.repulsion * domain->config.__internalSpeedFactor;
-    float friction = domain->config.friction;
+    const float repulsion = domain->config.repulsion;
+    const float friction = domain->config.friction;
 
     handleRepulsion(a, b, distance, repulsion);
     handleCollision(a, b, distance, friction);
@@ -64,11 +64,10 @@ void stepGlobal(Domain *domain) {
     }
 
     // Global applies
-    V3 gravity = mul3(&domain->config.gravity, domain->config.__internalSpeedFactor);
     for (int i = 0; i < particles; i++) {
         Particle *particle = &domain->particles[i];
 
-        applyGravity(particle, &gravity);
+        applyGravity(particle, &domain->config.gravity);
         checkBoundaries(particle, domain);
     }
 
@@ -92,11 +91,14 @@ void startSimulation(Domain* visualizerDomain, Config config) {
     srand(time(NULL));
 
     float maxInitialVelocity = 0.005f * domain.config.__internalSpeedFactor;
+    domain.config.repulsion *= domain.config.__internalSpeedFactor;
+    domain.config.gravity = mul3(&domain.config.gravity, domain.config.__internalSpeedFactor);
+
 
     printf("Timestep scaling factor: %f\n", domain.config.__internalSpeedFactor);
 
     // Calculate the volume of the domain
-    int custPointScatX = domain.config.dim[0] / 4;
+    int custPointScatX = domain.config.dim[0] / 6;
     int custPointScatY = domain.config.dim[1] / 1.5;
     int custPointScatZ = domain.config.dim[2];
 
@@ -128,15 +130,15 @@ void startSimulation(Domain* visualizerDomain, Config config) {
         particle->pos.z = zIndex * spacing + 0.1;
 
         // Velocity and color settings remain unchanged
-        particle->vel.x = (rand() % 100) * maxInitialVelocity;
-        particle->vel.y = 0;//(rand() % 100) * maxInitialVelocity;
-        particle->vel.z = (rand() % 100) * maxInitialVelocity;
+        particle->vel.x = (rand() % 1000) / 1000.0 * maxInitialVelocity - maxInitialVelocity / 2;
+        particle->vel.y = 0;
+        particle->vel.z = (rand() % 1000) / 1000.0 * maxInitialVelocity - maxInitialVelocity / 2;
 
         particle->col[0] = rand() % 255;
         particle->col[1] = rand() % 255;
         particle->col[2] = rand() % 255;
 
-        particle->radius = config.radius;
+        particle->mass = config.mass;
     }
 
 

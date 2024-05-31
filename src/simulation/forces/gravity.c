@@ -5,6 +5,6 @@
  */
 
 
-void applyGravity(Particle* particle, Domain *domain) {
-    particle->vel[1] -= domain->config.gravity * domain->config.__internalSpeedFactor;
+void applyGravity(Particle* particle, V3 *gravity) {
+    particle->vel = add3(&particle->vel, gravity);
 }

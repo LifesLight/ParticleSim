@@ -7,9 +7,11 @@
 
 void checkBoundaries(Particle *particle, Domain *domain) {
     // Predict the new position
-    const float newPosX = particle->pos[0] + particle->vel[0];
-    const float newPosY = particle->pos[1] + particle->vel[1];
-    const float newPosZ = particle->pos[2] + particle->vel[2];
+    const V3 newPos = add3(&particle->pos, &particle->vel);
+
+    const float newPosX = newPos.x;
+    const float newPosY = newPos.y;
+    const float newPosZ = newPos.z;
 
     const int DIM_X = domain->config.dim[0];
     const int DIM_Y = domain->config.dim[1];
@@ -19,26 +21,26 @@ void checkBoundaries(Particle *particle, Domain *domain) {
 
     // Check if we would go out of bounds and correct position and velocity if necessary
     if (newPosX - particle->radius < 0) {
-        particle->vel[0] *= -friction;
-        particle->pos[0] = particle->radius;
+        particle->vel.x *= -friction;
+        particle->pos.x = particle->radius;
     } else if (newPosX + particle->radius >= DIM_X) {
-        particle->vel[0] *= -friction;
-        particle->pos[0] = DIM_X - particle->radius;
+        particle->vel.x *= -friction;
+        particle->pos.x = DIM_X - particle->radius;
     }
 
     if (newPosY - particle->radius < 0) {
-        particle->vel[1] *= -friction;
-        particle->pos[1] = particle->radius;
+        particle->vel.y *= -friction;
+        particle->pos.y = particle->radius;
     } else if (newPosY + particle->radius >= DIM_Y) {
-        particle->vel[1] *= -friction;
-        particle->pos[1] = DIM_Y - particle->radius;
+        particle->vel.y *= -friction;
+        particle->pos.y = DIM_Y - particle->radius;
     }
 
     if (newPosZ - particle->radius < 0) {
-        particle->vel[2] *= -friction;
-        particle->pos[2] = particle->radius;
+        particle->vel.z *= -friction;
+        particle->pos.z = particle->radius;
     } else if (newPosZ + particle->radius >= DIM_Z) {
-        particle->vel[2] *= -friction;
-        particle->pos[2] = DIM_Z - particle->radius;
+        particle->vel.z *= -friction;
+        particle->pos.z = DIM_Z - particle->radius;
     }
 }

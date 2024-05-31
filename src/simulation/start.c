@@ -11,19 +11,64 @@ void updateDraw(Domain *source, Domain *target) {
     source->drawable = false;
 }
 
+void handleParticleInteraction(Particle *a, Particle *b, Domain *domain) {
+    const V3 delta = sub3(&a->pos, &b->pos);
+    float distance = length3(&delta);
+
+    float repulsion = domain->config.repulsion * domain->config.__internalSpeedFactor;
+    float friction = domain->config.friction;
+
+    handleRepulsion(a, b, distance, repulsion);
+    handleCollision(a, b, distance, friction);
+}
+
 void stepGlobal(Domain *domain) {
     const size_t particles = domain->config.numParticles;
 
     // Apply forces
-    checkCollision(domain);
+    for (int i = 0; i < particles; ++i) {
+        Particle *particle = &domain->particles[i];
 
-    applyRepulsion(domain);
+        const V3 temp = div3(&particle->pos, domain->chunkSize);
+
+        const int chunkX = temp.x;
+        const int chunkY = temp.y;
+        const int chunkZ = temp.z;
+
+        Chunk *chunk = &domain->chunks[chunkX][chunkY][chunkZ];
+        const int chunkParticles = chunk->numParticles;
+
+        // Check for this particle in the chunk
+        for (int j = 0; j < chunkParticles; ++j) {
+            Particle *other = chunk->particles[j];
+
+            if (other == particle) continue;
+
+            handleParticleInteraction(particle, other, domain);
+        }
+
+        // Check for particles in adjacent chunks
+        for (int j = 0; j < 26; ++j) {
+            Chunk *adj = chunk->adj[j];
+
+            if (adj == NULL) continue;
+
+            const int adjParticles = adj->numParticles;
+
+            for (int k = 0; k < adjParticles; ++k) {
+                Particle *other = adj->particles[k];
+
+                handleParticleInteraction(particle, other, domain);
+            }
+        }
+    }
 
     // Global applies
+    V3 gravity = mul3(&domain->config.gravity, domain->config.__internalSpeedFactor);
     for (int i = 0; i < particles; i++) {
         Particle *particle = &domain->particles[i];
 
-        applyGravity(particle, domain);
+        applyGravity(particle, &gravity);
         checkBoundaries(particle, domain);
     }
 
@@ -31,9 +76,7 @@ void stepGlobal(Domain *domain) {
     for (int i = 0; i < particles; ++i) {
         Particle *particle = &domain->particles[i];
 
-        particle->pos[0] += particle->vel[0];
-        particle->pos[1] += particle->vel[1];
-        particle->pos[2] += particle->vel[2];
+        particle->pos = add3(&particle->pos, &particle->vel);
     }
 }
 
@@ -53,9 +96,9 @@ void startSimulation(Domain* visualizerDomain, Config config) {
     printf("Timestep scaling factor: %f\n", domain.config.__internalSpeedFactor);
 
     // Calculate the volume of the domain
-    int custPointScatX = domain.config.dim[0];
-    int custPointScatY = domain.config.dim[1] / 2;
-    int custPointScatZ = domain.config.dim[2] / 4;
+    int custPointScatX = domain.config.dim[0] / 4;
+    int custPointScatY = domain.config.dim[1] / 1.5;
+    int custPointScatZ = domain.config.dim[2];
 
     float volume = (custPointScatX - 0.2) * (custPointScatY - 0.2) * (custPointScatZ - 0.2);
 
@@ -80,14 +123,14 @@ void startSimulation(Domain* visualizerDomain, Config config) {
         int zIndex = i / (numParticlesX * numParticlesY);
 
         // Assign positions based on the grid indices, with padding added
-        particle->pos[0] = xIndex * spacing + 0.1;
-        particle->pos[1] = yIndex * spacing + 0.1;
-        particle->pos[2] = zIndex * spacing + 0.1;
+        particle->pos.x = xIndex * spacing + 0.1;
+        particle->pos.y = yIndex * spacing + 0.1;
+        particle->pos.z = zIndex * spacing + 0.1;
 
         // Velocity and color settings remain unchanged
-        particle->vel[0] = (rand() % 100) * maxInitialVelocity;
-        particle->vel[1] = 0;//(rand() % 100) * maxInitialVelocity;
-        particle->vel[2] = (rand() % 100) * maxInitialVelocity;
+        particle->vel.x = (rand() % 100) * maxInitialVelocity;
+        particle->vel.y = 0;//(rand() % 100) * maxInitialVelocity;
+        particle->vel.z = (rand() % 100) * maxInitialVelocity;
 
         particle->col[0] = rand() % 255;
         particle->col[1] = rand() % 255;

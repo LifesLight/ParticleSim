@@ -12,18 +12,11 @@
 #include <math.h>
 #include <string.h>
 
-// Predeclare Chunk
-typedef struct Chunk Chunk;
+typedef struct Domain Domain;
 
-struct Chunk {
-    Chunk *adj[26];
+#include "simulation/containers/chunk.h"
 
-    int numParticles;
-    int size;
-    Particle **particles;
-};
-
-typedef struct {
+struct Domain {
     bool drawable;
     Particle *particles;
 
@@ -32,8 +25,7 @@ typedef struct {
     Chunk ***chunks;
 
     Config config;
-} Domain;
+};
+
 
 void initDomain(Domain* domain, Config config);
-
-void updateChunks(Domain* domain);

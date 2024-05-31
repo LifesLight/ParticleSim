@@ -9,4 +9,4 @@
 #include "simulation/containers/domain.h"
 #include "simulation/containers/domainConfig.h"
 
-void applyGravity(Particle* particle, Domain *domain);
+void applyGravity(Particle* particle, V3 *gravity);

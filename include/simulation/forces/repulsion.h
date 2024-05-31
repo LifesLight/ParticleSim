@@ -11,4 +11,4 @@
 
 #include <math.h>
 
-void applyRepulsion(Domain *domain);
+void handleRepulsion(Particle *a, Particle *b, float distance, float repulsion);

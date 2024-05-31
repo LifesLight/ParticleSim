@@ -11,4 +11,4 @@
 
 #include <math.h>
 
-void checkCollision(Domain *domain);
+void handleCollision(Particle* a, Particle* b, float distance, float friction);

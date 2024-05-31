@@ -20,6 +20,8 @@ set(SOURCES_COMMON
     src/simulation/forces/gravity.c
     src/simulation/forces/collision.c
     src/simulation/forces/repulsion.c
+    src/simulation/math/vector3.c
+    src/simulation/containers/chunk.c
 )
 
 if (TERMINAL)

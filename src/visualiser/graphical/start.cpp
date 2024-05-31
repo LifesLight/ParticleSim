@@ -112,14 +112,16 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
-void updatePoints(const Particle* particles, size_t numParticles, std::vector<glm::vec3>& cords, std::vector<glm::vec3>& cols, int DIM_X, int DIM_Y, int DIM_Z) {
+void updatePoints(const Particle* particles, size_t numParticles, std::vector<glm::vec3>& cords, std::vector<glm::vec3>& cols, int DIM_X, int DIM_Y, int DIM_Z, float speed) {
     cords.clear();
     cols.clear();
     for (size_t i = 0; i < numParticles; i++) {
-        cords.push_back(glm::vec3(particles[i].pos[2] - DIM_Z / 2, particles[i].pos[1] - DIM_Y / 2, particles[i].pos[0] - DIM_X / 2));
-        // cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]) / 255.0f);
+        cords.push_back(glm::vec3(particles[i].pos.z - DIM_Z / 2, particles[i].pos.y - DIM_Y / 2, particles[i].pos.x - DIM_X / 2));
+//        cols.push_back(glm::vec3(particles[i].col[0], particles[i].col[1], particles[i].col[2]) / 255.0f);
 
-        float totalVel = sqrt(particles[i].vel[0] * particles[i].vel[0] + particles[i].vel[1] * particles[i].vel[1] + particles[i].vel[2] * particles[i].vel[2]);
+        float totalVel = sqrt(particles[i].vel.x * particles[i].vel.x + particles[i].vel.y * particles[i].vel.y + particles[i].vel.z * particles[i].vel.z);
+        totalVel /= (speed * 500);
+
         if (totalVel < 0.0f) {
             totalVel *= -1;
         }
@@ -138,6 +140,7 @@ void updatePoints(const Particle* particles, size_t numParticles, std::vector<gl
         }
 
         cols.push_back(glm::vec3(red, particles[i].col[1] / 255.0f, blue));
+
     }
 }
 
@@ -234,19 +237,19 @@ void startVisualiser() {
     std::cout << "Compiled shader program." << std::endl;
 
     Config config;
-    config.dim[0] = 50;
+    config.dim[0] = 75;
     config.dim[1] = 25;
-    config.dim[2] = 100;
+    config.dim[2] = 15;
 
-    config.friction = 0.98f;
-    config.repulsion = 0.001f;
+    config.friction = 0.5f;
+    config.repulsion = 0.025f;
 
-    config.gravity = 0.01f;
-    config.speed = 0.001f;
+    config.gravity = {0.0f, -0.01f, 0.0f}; 
+    config.speed = 0.01f;
     config.supsampling = 1;
     config.fps = 60;
 
-    config.numParticles = 40000;
+    config.numParticles = 20000;
     config.radius = 0.5f;
     config.targetChunkCount = pow(4, 9);
 
@@ -260,7 +263,7 @@ void startVisualiser() {
     std::vector<glm::vec3> cords;
     std::vector<glm::vec3> colors;
 
-    updatePoints(particles, config.numParticles, cords, colors, config.dim[0], config.dim[1], config.dim[2]);
+    updatePoints(particles, config.numParticles, cords, colors, config.dim[0], config.dim[1], config.dim[2], config.speed);
 
     GLuint VBO, CBO;
     glGenBuffers(1, &VBO);
@@ -296,7 +299,7 @@ void startVisualiser() {
             glClearColor(0.831372549, 0.7960784314f, 0.8980392157f, 1.0f);
 
             if (renderDomain->drawable) {
-                updatePoints(particles, config.numParticles, cords, colors, config.dim[0], config.dim[1], config.dim[2]);
+                updatePoints(particles, config.numParticles, cords, colors, config.dim[0], config.dim[1], config.dim[2], config.speed);
 
                 glBindBuffer(GL_ARRAY_BUFFER, VBO);
                 glBufferSubData(GL_ARRAY_BUFFER, 0, cords.size() * sizeof(glm::vec3), cords.data());
